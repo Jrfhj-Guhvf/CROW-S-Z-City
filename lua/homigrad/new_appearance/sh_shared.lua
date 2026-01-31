@@ -42,7 +42,7 @@ hg.Appearance.GenerateRandomName = GenerateRandomName
 
 -- Check access to all
 local access = {
-    ["STEAM_0:1:163575696"] = true -- distac our custom model creator
+    --["STEAM_0:1:163575696"] = true -- distac our custom model creator
 }
 local hg_appearance_access_for_all = ConVarExists("hg_appearance_access_for_all") and GetConVar("hg_appearance_access_for_all") or CreateConVar("hg_appearance_access_for_all", 1, {FCVAR_REPLICATED,FCVAR_NEVER_AS_STRING,FCVAR_ARCHIVE}, "Enable free items in appearance", 0, 1)
 local function GetAccessToAll(ply)
