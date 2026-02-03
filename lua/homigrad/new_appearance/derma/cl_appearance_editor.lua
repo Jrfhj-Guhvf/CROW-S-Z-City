@@ -3,19 +3,19 @@ local APmodule = hg.Appearance
 local PANEL = {}
 
 local colors = {}
-colors.secondary = Color(25,25,35,195)
-colors.mainText = Color(255,255,255,255)
-colors.secondaryText = Color(45,45,45,125)
-colors.selectionBG = Color(20,130,25,225)
-colors.highlightText = Color(120,35,35)
-colors.presetBG = Color(35,35,45,220)
-colors.presetBorder = Color(80,80,100,255)
-colors.presetHover = Color(50,50,65,240)
-colors.scrollbarBG = Color(20,20,30,200)
-colors.scrollbarGrip = Color(70,70,90,255)
-colors.scrollbarGripHover = Color(100,100,130,255)
-colors.scrollbarBorder = Color(100,100,120,200)
-colors.previewBorder = Color(255,200,50,255)
+colors.secondary        = Color(20, 25, 40, 210)    
+colors.presetBG         = Color(25, 30, 50, 220)
+colors.presetHover      = Color(40, 45, 75, 240)
+colors.mainText         = Color(230, 235, 255, 255)
+colors.secondaryText    = Color(140, 150, 180, 160)
+colors.highlightText    = Color(220, 60, 60, 255)   
+colors.selectionBG      = Color(40, 90, 180, 230)   
+colors.previewBorder    = Color(200, 60, 60, 255)  
+colors.presetBorder     = Color(80, 90, 140, 255)
+colors.scrollbarBG          = Color(15, 20, 35, 220)
+colors.scrollbarGrip        = Color(60, 70, 120, 255)
+colors.scrollbarGripHover   = Color(90, 110, 190, 255)
+colors.scrollbarBorder      = Color(120, 130, 180, 200)
 
 local presetsDir = "zcity/appearances/presets/"
 
