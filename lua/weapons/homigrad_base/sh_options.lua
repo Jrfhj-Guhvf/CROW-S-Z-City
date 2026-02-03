@@ -112,12 +112,17 @@ else
 		if (ply.change_posture_cooldown or 0) > CurTime() then return end
 		ply.change_posture_cooldown = CurTime() + 0.1
 
-		if pos ~= -1 then 
+		local gun = ply:GetActiveWeapon()
+		if IsValid(gun) and ishgweapon(gun) then
+			ply:EmitSound("weapons/zmirli/shared/foley_light" .. math.random(1,4) .. ".wav", 45, math.random(95,105))
+		end
+
+		if pos ~= -1 then
 			if pos == ply.posture then
 				ply.posture = 0
 				pos = 0
 			else
-				ply.posture = pos 
+				ply.posture = pos
 			end
 		else
 			ply.posture = ply.posture or 0

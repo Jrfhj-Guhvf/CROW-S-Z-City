@@ -130,7 +130,7 @@ end)
 hook.Add("Org Think", "ItHurtsfrfr",function(owner, org, timeValue)
 	if owner.PlayerClassName != "furry" then return end
 
-	if (owner.lastPainSoundCD or 0) < CurTime() and !org.otrub and org.pain >= 30 and mRandom(1, 50) == 1 then
+	if (owner.lastPainSoundCD or 0) < CurTime() and !org.otrub and org.pain >= 30 and math.random(1, 50) == 1 then
 		local phrase = table.Random(fur_pain)
 
 		local muffed = owner.armors["face"] == "mask2"
