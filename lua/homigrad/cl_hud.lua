@@ -142,9 +142,9 @@ if IsValid(MENUPANELHUYHUY) then
 end
 
 hg.radialOptions = hg.radialOptions or {}
-local colBlack = Color(0, 0, 0, 152)
-local colOption = Color(40, 0, 55, 152)
-local colWhite = Color(255, 255, 255, 255)
+local colBlack = Color(0, 0, 100, 152)
+local colOption = Color(0, 0, 100, 152)
+local colWhite = Color(200, 255, 255, 255)
 local colWhiteTransparent = Color(176, 40, 40, 100)
 local colTransparent = Color(0, 0, 0, 0)
 local matHuy = Material("vgui/white")
