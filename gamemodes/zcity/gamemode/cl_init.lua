@@ -393,7 +393,7 @@ hook.Add("player_connect", "zcityhuy", function(data)
 	end
 end)
 
-hook.Add("InitPostEntity", "furryhuy", function()
+hook.Add("InitPostEntity", "higgershuy", function()
 	if file.Exists("zcity_muted.txt", "DATA") then
 		local json = file.Read("zcity_muted.txt", "DATA")
 
@@ -401,8 +401,10 @@ hook.Add("InitPostEntity", "furryhuy", function()
 			hg.playerInfo = util.JSONToTable(json)
 		end
 
+		local plrs = player.GetAll()
+
 		if hg.playerInfo then
-			for i, ply in player.Iterator() do
+			for i, ply in ipairs(plrs) do
 				if not istable(hg.playerInfo[ply:SteamID()]) then
 					local muted = hg.playerInfo[ply:SteamID()]
 					hg.playerInfo[ply:SteamID()] = {}
@@ -420,8 +422,8 @@ hook.Add("InitPostEntity", "furryhuy", function()
 end)
 
 local colGray = Color(122,122,122,255)
-local colBlue = Color(130,10,10)
-local colBlueUp = Color(160,30,30)
+local colBlue     = Color(40, 120, 255, 255)   
+local colBlueUp   = Color(70, 160, 255, 255)   
 local col = Color(255,255,255,255)
 
 local colSpect1 = Color(75,75,75,255)
@@ -534,7 +536,7 @@ function GM:ScoreboardShow()
 	muteallbut.DoClick = function(self,w,h)
 		hg.muteall = not hg.muteall
 		
-		for i,ply in player.Iterator() do
+		for i,ply in ipairs(player.GetAll()) do
 			if hg.muteall then
 				//ply.oldmutedspect = ply:IsMuted()
 
@@ -567,7 +569,7 @@ function GM:ScoreboardShow()
 	mutespectbut.DoClick = function(self,w,h)
 		hg.mutespect = not hg.mutespect
 		
-		for i,ply in player.Iterator() do
+		for i,ply in ipairs(player.GetAll()) do
 			if ply:Alive() then continue end
 
 			if hg.mutespect then
@@ -592,7 +594,7 @@ function GM:ScoreboardShow()
 	local ServerName = GetHostName() or "ZCity | Developer Server | #01"
 	local tick
 	scoreBoardMenu.PaintOver = function(self,w,h)
-		surface.SetDrawColor( 255, 0, 0, 128)
+		surface.SetDrawColor( 40, 120, 255, 128 )
         surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 
 		surface.SetFont( "ZB_InterfaceLarge" )
@@ -641,7 +643,7 @@ function GM:ScoreboardShow()
 		end
 
 		SPECTATE.Paint = function(self,w,h)
-			surface.SetDrawColor( 255, 0, 0, 128)
+			surface.SetDrawColor( 40, 120, 255, 128 )
 			surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 			surface.SetFont( "ZB_InterfaceMedium" )
 			surface.SetTextColor(col.r,col.g,col.b,col.a)
@@ -666,7 +668,7 @@ function GM:ScoreboardShow()
 		end
 
 		PLAYING.Paint = function(self,w,h)
-			surface.SetDrawColor( 255, 0, 0, 128)
+			surface.SetDrawColor( 40, 120, 255, 128 )
 			surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 			surface.SetFont( "ZB_InterfaceMedium" )
 			surface.SetTextColor(col.r,col.g,col.b,col.a)
@@ -687,12 +689,12 @@ function GM:ScoreboardShow()
 		surface.SetDrawColor(0, 0, 0, 125)
 		surface.DrawRect(0, 0, w, h)
 
-		surface.SetDrawColor( 255, 0, 0, 128)
+		surface.SetDrawColor( 40, 120, 255, 128 )
         surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 	end
 
 	local disappearance = lply:GetNetVar("disappearance", nil)
-	for i, ply in player.Iterator() do -- надо это говно переделать.
+	for i, ply in ipairs(player.GetAll()) do -- надо это говно переделать.
 		if ply:Team() == TEAM_SPECTATOR then continue end
 		if CurrentRound().name == "fear" and !ply:Alive() then continue end
 		if disappearance and ply != lply then continue end
@@ -764,11 +766,11 @@ function GM:ScoreboardShow()
 		surface.SetDrawColor(0, 0, 0, 125)
 		surface.DrawRect(0, 0, w, h)
 
-		surface.SetDrawColor( 255, 0, 0, 128)
+		surface.SetDrawColor( 40, 120, 255, 128 )
         surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 	end
 
-	for i, ply in player.Iterator() do
+	for i, ply in ipairs(player.GetAll()) do
 		if ply:Team() ~= TEAM_SPECTATOR then continue end
 		if CurrentRound().name == "fear" and !ply:Alive() then continue end
 		if disappearance and ply != lply then continue end
