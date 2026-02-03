@@ -351,9 +351,9 @@ hook.Add("PostDrawTranslucentRenderables","stencil-test-holo2",function()
 	local self = ply.GetActiveWeapon and ply:GetActiveWeapon() or nil
 	if not IsValid(self) or not self.ishgwep or not self.GetWeaponEntity or not IsValid(self:GetWeaponEntity()) then return end
 
-	local tr,pos,ang = self:GetTrace()
 	local models = self.holomodels
 	if not models and not self.internalholo then return end
+	local tr, pos, ang = self:GetTrace()
 	local view = render.GetViewSetup()
 	local eyePos = view.origin
 	local hitPos = eyePos + ang:Forward() * 2624
@@ -537,7 +537,7 @@ hook.Add("PostDrawOpaqueRenderables","stencil-test-holo",function()
 	render.SetStencilPassOperation( STENCIL_REPLACE )
 
 	-- Draw our entities. They will draw as normal
-	for _, ent in ipairs( player.GetAll() ) do
+	for _, ent in player.Iterator() do
 		ent:DrawModel()
 	end
 	

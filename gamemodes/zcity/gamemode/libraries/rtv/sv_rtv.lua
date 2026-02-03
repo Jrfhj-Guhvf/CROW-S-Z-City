@@ -148,22 +148,25 @@ net.Receive("ZB_RockTheVote_vote", function(len, ply)
     cooldown[ply:EntIndex()] = CurTime() + 1
 
     local playerIdx = ply:EntIndex()
-    
+
     if playervote[playerIdx] and votes[playervote[playerIdx]] then
         votes[playervote[playerIdx]] = votes[playervote[playerIdx]] - (playerVoteWeight[playerIdx] or 1)
     end
 
     local map = net.ReadString()
+    if not map or map == "" then return end
+    if map ~= "random" and not table.HasValue(mappull, map) then return end
     playervote[playerIdx] = map
 
     playerVoteWeight[playerIdx] = 1
-    
+
     votes[map] = (votes[map] or 0) + playerVoteWeight[playerIdx]
 
     net.Start("ZB_RockTheVote_voteCLreg")
         net.WriteTable(votes)
     net.Broadcast()
 end)
+
 
 local endStarted = false
 
@@ -470,7 +473,7 @@ function zb.CheckRTVVotes(needPrint)
     
     if votes >= votesNeeded then
         if needPrint then
-            for _, v in pairs(player.GetAll()) do
+            for _, v in player.Iterator() do
                 v:ChatPrint("Enough votes to change the map. RTV will be on next round.")
             end
         end

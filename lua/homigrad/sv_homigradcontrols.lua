@@ -1,4 +1,7 @@
+local hg_allow_homigrad = ConVarExists("hg_allow_homigrad") and GetConVar("hg_allow_homigrad") or CreateConVar("hg_allow_homigrad",0,FCVAR_SERVER_CAN_EXECUTE,"allow homigrad draging entites",0,1)
+
 hook.Add("Player Think","ShadowControlAdmin",function(ply, time)
+	if !hg_allow_homigrad:GetBool() then return end
 	if !ply:IsSuperAdmin() or ply:Alive() then return end
 
 	if ply:KeyDown(IN_ATTACK) and ply:GetMoveType() == MOVETYPE_NOCLIP then
