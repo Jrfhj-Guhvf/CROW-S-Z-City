@@ -1,6 +1,7 @@
 AddCSLuaFile()
 --
 local delta = 0
+local color_red = Color(255, 0, 0)
 
 hook.Add("HG.InputMouseApply", "ChangeZoom", function(tbl)
 	local ply = LocalPlayer()
