@@ -1,7 +1,7 @@
 ----
 local PANEL = {}
 
-local red_select = Color(245,45,45)
+local red_select = Color(0,0,200)
 
 local Selects = {
     {Title = "Disconnect", Func = function(luaMenu) RunConsoleCommand("disconnect") end},
@@ -149,7 +149,7 @@ function PANEL:Init()
     zteam:Dock(BOTTOM)
     zteam:SetFont("ZCity_Tiny")
     zteam:SetTextColor(clr_gray)
-    zteam:SetText("Authors: uzelezz, Sadsalat, Mr.Point, Zac90, Deka, Mannytko")
+    zteam:SetText("insert green screen elephant")
     zteam:DockMargin(0,ScreenScaleH(60),0,0)
     zteam:SetContentAlignment(1)
 
