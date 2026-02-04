@@ -23,11 +23,15 @@ function CLASS.On(self)
     self:SetPlayerColor(Color(255, 217, 15):ToVector())
     self:SetSubMaterial()
     self:SetBodyGroups("00000000000")
-    GetAppearance(self)
-    local Appearance = self.Appearance or GetRandomAppearance(self, 1)
-    Appearance.ClothesStyle = ""
-    self:SetNetVar("Accessories", "")
-    self.CurAppearance = Appearance
+    local Appearance
+    if hg and hg.Appearance and hg.Appearance.GetRandomAppearance then
+        Appearance = self.CurAppearance or hg.Appearance.GetRandomAppearance()
+        Appearance.AClothes = ""
+        self:SetNetVar("Accessories", "")
+        self.CurAppearance = Appearance
+    else
+        self:SetNetVar("Accessories", "")
+    end
 
     if self.SetMaxHealth then
         self:SetMaxHealth(250)
@@ -50,11 +54,14 @@ function CLASS.On(self)
             s.range = (s.range or 180) * 1.5
             s.max = (s.max or s.range) * 1.5
         end
+        self.organism.berserk = math.max(self.organism.berserk or 0, 2)
     end
 
     self.MeleeDamageMul = 3
 
-    
-
-    self:SetNWString("PlayerName","Homer " .. (Appearance.Name or "Simpson"))
+    if Appearance and Appearance.AName then
+        self:SetNWString("PlayerName","Homer " .. Appearance.AName)
+    else
+        self:SetNWString("PlayerName","Homer")
+    end
 end
