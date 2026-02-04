@@ -370,6 +370,7 @@ if CLIENT then
         local batchPanel = vgui.Create("DPanel", leftPanel)
         batchPanel:Dock(BOTTOM)
         batchPanel:DockMargin(5, 5, 5, 5)
+        batchPanel:SetTall(80)
         StyleElement(batchPanel, Color(40, 40, 40, 200))
         
         local batchTitle = vgui.Create("DLabel", batchPanel)
