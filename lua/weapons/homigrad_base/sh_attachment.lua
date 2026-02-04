@@ -679,11 +679,11 @@ if CLIENT then
 
 	local plyAttachments = {}
 	local weaponAttachments = {}
-	local drop = false
-	local gray = Color(200, 200, 200)
-	local red = Color(75,25,25)
-	local redselected = Color(150,0,0)
-	local blue = Color(200, 200, 255)
+		local drop = false
+		local gray = Color(200, 200, 200)
+		local red = Color(25, 25, 75)
+		local redselected = Color(0,162,255)
+		local blue = Color(200, 200, 255)
 	local black = Color(24,24,24)
 	local whitey = Color(255, 255, 255)
 	local chosen2
@@ -695,21 +695,26 @@ if CLIENT then
 	local function refreshtbl()
 		local tblcpy = {}
 
-		local tbl = lply:GetNetVar("Inventory")["Attachments"]
-		local wep = lply:GetActiveWeapon()
-		local achtbl = {}
-		if IsValid(wep) and ishgweapon(wep) then
-			achtbl = lply:GetActiveWeapon():GetNetVar("attachments")
+		local ply = lply or LocalPlayer()
+		if not IsValid(ply) then return tblcpy end
+
+		local inv = ply.GetNetVar and ply:GetNetVar("Inventory") or nil
+		local tbl = (inv and (inv.Attachments or inv["Attachments"])) or {}
+
+		local wep = ply:GetActiveWeapon()
+		local achtbl
+		if IsValid(wep) and ishgweapon(wep) and wep.GetNetVar then
+			achtbl = wep:GetNetVar("attachments")
 		end
-		
+
 		for i, att in pairs(tbl) do
-			if !att then continue end
+			if not att then continue end
 			table.insert(tblcpy, {att, false})
 		end
 
-		if achtbl then
+		if istable(achtbl) then
 			for i, att in pairs(achtbl) do
-				if !att or !next(att) then continue end
+				if not att or not next(att) then continue end
 				table.insert(tblcpy, {att[1], true})
 			end
 		end
@@ -777,7 +782,7 @@ if CLIENT then
 
 		function sbar.btnGrip:Paint(w, h)
 			self.lerpcolor = Lerp(FrameTime() * 10, self.lerpcolor or 0.2,(self:IsHovered() and 1 or 0.2))
-			draw.RoundedBox(0, 0, 0, w, h, Color(100 * self.lerpcolor, 10, 10))
+			draw.RoundedBox(0, 0, 0, w, h, Color(10, 10, 100 * self.lerpcolor))
 		end
 
 		scroll.Think = function()
@@ -809,7 +814,7 @@ if CLIENT then
 				but2:Dock( RIGHT )
 
 				but2.Paint = function(self, w, h)
-					surface.SetDrawColor(50, 0, 0, 125)
+					surface.SetDrawColor(0, 0, 50, 125)
 					surface.DrawRect(0, 0, w, h)
 				end
 
@@ -820,7 +825,7 @@ if CLIENT then
 				but.Paint = function(self, w, h)
 					surface.SetMaterial(mat)
 					local typea = string.byte(v[1], 1, 1) - 100
-					surface.SetDrawColor(v[2] and 50 or 100, v[2] and 0 or typea * 9, 0, 255)
+					surface.SetDrawColor(0, v[2] and 50 or 100, typea * 9, 255)
 					surface.DrawTexturedRect(0, 0, w, h)
 				end
 	
