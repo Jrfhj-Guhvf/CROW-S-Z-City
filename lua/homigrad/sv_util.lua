@@ -409,7 +409,11 @@ hook.Add("Player Think", "homigrad-dropholstered", function(ply)
 	if ply.organism and ply.organism.allowholster then return end
 
 	local activewep = ply:GetActiveWeapon()
-	for i,wep in ipairs(ply:GetWeapons()) do
+	local weps = ply:GetWeapons()
+	local wep
+	for i = 1, #weps do
+		wep = weps[i]
+		
 		if wep.NoHolster and activewep ~= wep and wep.picked then 
 			ply:DropWeapon(wep)
 		end
@@ -1292,17 +1296,18 @@ hook.Add("PlayerDeath","I_Feel_Death",function(ply)
 end)
 
 hook.Add("PostEntityTakeDamage", "GlassShards", function(ent, dmginfo)
-	if ent:GetClass() ~= "func_breakable_surf" then return end
-	if math.random(10) == 5 then
-		local glass = ents.Create("weapon_hg_glassshard")
-		local inf = dmginfo:GetInflictor()
-		glass:SetPos(IsValid(inf) and inf:GetPos() or dmginfo:GetAttacker():GetPos())
-		glass:SetAngles(AngleRand(-180, 180))
-		glass:Spawn()
-		glass.IsSpawned = true
-		glass.init = true
-		--Player(2):SetPos(IsValid(inf) and inf:GetPos() or dmginfo:GetAttacker():GetPos())
-		--print(ent, glass) -- bro im spawned and etc.
+	if IsValid(ent) and math.random(4) == 2 then
+		if ent:GetClass() == "func_breakable_surf" or (ent:GetClass() == "func_breakable" and ent:GetMaterialType() == MAT_GLASS) then
+			local glass = ents.Create("weapon_hg_glassshard")
+			local inf = dmginfo:GetInflictor()
+			glass:SetPos(IsValid(inf) and inf:GetPos() or dmginfo:GetAttacker():GetPos())
+			glass:SetAngles(AngleRand(-180, 180))
+			glass:Spawn()
+			glass.IsSpawned = true
+			glass.init = true
+			--Player(2):SetPos(IsValid(inf) and inf:GetPos() or dmginfo:GetAttacker():GetPos())
+			--print(ent, glass) -- bro im spawned and etc.
+		end
 	end
 end)
 
@@ -1449,7 +1454,6 @@ function entMeta:SDOIsDoor()
 end
 
 hook.Add( "AcceptInput", "StealthOpenDoors", function( ent, inp, act, ply, val )
-
 	if inp == "Use" and ent:SDOIsDoor() then
 		local func = ((ply:KeyDown( IN_SPEED ) and "FastOpenDoor") or ( ply:KeyDown( IN_WALK ) and "StealthOpenDoor") or "NormalOpenDoor")
 		ent[func](ent,ply)
@@ -1468,13 +1472,13 @@ hook.Add( "AcceptInput", "StealthOpenDoors", function( ent, inp, act, ply, val )
 			ent:GetInternalVariable( "m_hMaster" )[func](ent:GetInternalVariable( "m_hMaster" ),ply)
 		end
 	end
-
 end )
 
 hook.Add( "KeyPress", "snowballs_pickup", function( ply, key )
 	if IsValid(ply.FakeRagdoll) then return end
 	ply.SnowBallPickupCD = ply.SnowBallPickupCD or 0
 	if ply.SnowBallPickupCD > CurTime() then return end
+
 	if ( key == IN_USE ) then
 		local tr = hg.eyeTrace(ply, 120)
 		if tr.MatType == MAT_SNOW then
