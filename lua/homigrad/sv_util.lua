@@ -1510,7 +1510,7 @@ hg.MapTemps = {
 	["gm_fork_north"] = -16,
 	["gm_fork_north_day"] = -21,
 	["gm_ijm_boreas"] = -40,
-	["gm_construct"] = -30 -- тест температуры
+	["gm_construct"] = 20 -- тест температуры
 }
 
 function hg.TranslateToBodyTemp(temp, org)
