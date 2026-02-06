@@ -7,8 +7,8 @@ MODE.ROUND_TIME = 9000
 hg.NextMap = ""
 
 
-local coop_rts = CreateConVar("zb_coop_rts", "0", FCVAR_PROTECTED, "apeh twix", 0, 1)
-local coop_rts_cmb = CreateConVar("zb_coop_rts_cmb", "0", FCVAR_PROTECTED, "hepa xiwt", 0, 1)
+local coop_rts = CreateConVar("zb_coop_rts", "0", {FCVAR_NOTIFY, FCVAR_SERVER_CAN_EXECUTE}, "real time strategy in co-op", 0, 1)
+local coop_rts_cmb = CreateConVar("zb_coop_rts_cmb", "0", {FCVAR_NOTIFY, FCVAR_SERVER_CAN_EXECUTE}, "dr wallace breen simulator", 0, 1)
 
 MODE.LootSpawn = false
 
@@ -165,7 +165,17 @@ end
 local mapchange = CreateConVar("zb_coop_autochangelevel", "1", FCVAR_PROTECTED, "", 0, 1)
 
 function MODE:ShouldRoundEnd()
-    if (#zb:CheckAlive() <= 0) and (hg.MapCompleted or false) then
+
+    local lives = 0
+
+    for _,ply in player.Iterator() do
+        if not ply:Alive() then continue end
+        if ply.PlayerClassName == "Combine" or ply.PlayerClassName == "Metrocop" then continue end
+        lives = lives + 1
+    end
+
+
+    if (lives <= 0) and (hg.MapCompleted or false) then
         timer.Simple(5, function()
             hg.AddMapToTable(game.GetMap())
 
@@ -176,7 +186,7 @@ function MODE:ShouldRoundEnd()
             RunConsoleCommand("changelevel", hg.NextMap)
         end)
     end
-    return (#zb:CheckAlive() <= 0)
+    return (lives <= 0)
 end
 
 function MODE:RoundStart()
