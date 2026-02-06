@@ -131,6 +131,16 @@ contextPhrases = {
 			"vo/streetwar/sniper/male01/c17_09_help01.wav", --
 			"vo/streetwar/sniper/male01/c17_09_help02.wav", --
 		},
+		 ["Funny"] = {
+            "joewiththeguy.wav", -- add your own shitty lttile voicelines here too yknow
+            "bbq.wav",
+            "fuckyou.wav",
+            "swordsword.wav",
+            "tomholland.wav",
+            "momishomeless.wav",
+            "meinmyroom.wav",
+            "charlie.wav"
+        },
 		["Someone died"] = {
 			"vo/episode_1/npc/male01/cit_buddykilled01.wav",
 			"vo/episode_1/npc/male01/cit_buddykilled07.wav",
