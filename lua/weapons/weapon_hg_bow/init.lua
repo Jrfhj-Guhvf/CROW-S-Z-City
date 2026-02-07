@@ -108,8 +108,8 @@ function SWEP:ThinkAdd()
 		self:PlayAnim("deploy_empty")
 	end
 
-	local handscheck = hg.CanUseLeftHand(ply) or hg.CanUseRightHand(ply)
-	if hg.KeyDown(ply, IN_ATTACK2) and not ply:IsSprinting() and not wallblock and not handscheck then
+	local handscheck = hg.CanUseLeftHand(ply) and hg.CanUseRightHand(ply)
+	if hg.KeyDown(ply, IN_ATTACK2) and not ply:IsSprinting() and not wallblock and handscheck then
 		if self.CurState == -1 and self.CurState ~= 0.5 then
 			self.CurState = 0.5
 			self:PlayAnim(ply:GetAmmoCount("Arrow") == 0 and "idle_to_aim_empty" or "idle_to_aim")
