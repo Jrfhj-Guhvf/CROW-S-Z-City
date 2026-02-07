@@ -464,7 +464,7 @@ local function OpenPlayerSoundSettings(selfa, ply)
 
 	function volumeSlider:Paint(w,h)
 		draw.RoundedBox( 0, 0, 0, w, h, Color( 0, 0, 0 ) )
-		draw.RoundedBox( 0, 0, 0, w*self:GetSlideX(), h, Color( 255, 0, 0 ) )
+		draw.RoundedBox( 0, 0, 0, w*self:GetSlideX(), h, Color( 80, 160, 255 ) )
 		draw.DrawText( ( math.Round( 100*self:GetSlideX(), 0 ) ).."%", "DermaDefault", w/2, h/4, color_white, TEXT_ALIGN_CENTER )
 	end
 	function volumeSlider.Knob.Paint(self) end
@@ -593,7 +593,7 @@ function GM:ScoreboardShow()
 	local ServerName = GetHostName() or "ZCity | Developer Server | #01"
 	local tick
 	scoreBoardMenu.PaintOver = function(self,w,h)
-		surface.SetDrawColor( 255, 0, 0, 128)
+		surface.SetDrawColor( 80, 160, 255, 128)
         surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 
 		surface.SetFont( "ZB_InterfaceLarge" )
@@ -642,7 +642,7 @@ function GM:ScoreboardShow()
 		end
 
 		SPECTATE.Paint = function(self,w,h)
-			surface.SetDrawColor( 255, 0, 0, 128)
+			surface.SetDrawColor( 80, 160, 255, 128)
 			surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 			surface.SetFont( "ZB_InterfaceMedium" )
 			surface.SetTextColor(col.r,col.g,col.b,col.a)
@@ -667,7 +667,7 @@ function GM:ScoreboardShow()
 		end
 
 		PLAYING.Paint = function(self,w,h)
-			surface.SetDrawColor( 255, 0, 0, 128)
+			surface.SetDrawColor( 80, 160, 255, 128)
 			surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 			surface.SetFont( "ZB_InterfaceMedium" )
 			surface.SetTextColor(col.r,col.g,col.b,col.a)
@@ -688,7 +688,7 @@ function GM:ScoreboardShow()
 		surface.SetDrawColor(0, 0, 0, 125)
 		surface.DrawRect(0, 0, w, h)
 
-		surface.SetDrawColor( 255, 0, 0, 128)
+		surface.SetDrawColor( 80, 160, 255, 128)
         surface.DrawOutlinedRect( 0, 0, w, h, 2.5 )
 	end
 
@@ -1013,7 +1013,7 @@ concommand.Add("zb_snake", function() -- вот как здесь!
   
     local function drawFood()
         if food then
-            surface.SetDrawColor(255, 0, 0, 255)
+            surface.SetDrawColor(80, 160, 255, 255)
             surface.DrawRect(food.x * gridSize, food.y * gridSize, gridSize - 1, gridSize - 1)
         end
     end
