@@ -10,6 +10,7 @@ zb.GuiltSQL = zb.GuiltSQL or {}
 zb.GuiltSQL.PlayerInstances = zb.GuiltSQL.PlayerInstances or {}
 
 local hg_developer = ConVarExists("hg_developer") and GetConVar("hg_developer") or CreateConVar("hg_developer",0,FCVAR_SERVER_CAN_EXECUTE,"enable developer mode (enables damage traces)",0,1)
+local hg_fuckguilt = ConVarExists("hg_fuckguilt") and GetConVar("hg_fuckguilt") or CreateConVar("hg_fuckguilt",0,FCVAR_SERVER_CAN_EXECUTE,"disable guilt and karma system entirely",0,1)
 
 hook.Add("DatabaseConnected", "GuiltCreateData", function()
 	local query
@@ -28,10 +29,15 @@ hook.Add( "PlayerInitialSpawn","ZB_GuiltSQL", function( ply )
     local name = ply:Name()
 	local steamID64 = ply:SteamID64()
 
-    --if not zb.GuiltSQL.Active then
-    --    zb.GuiltSQL.PlayerInstances[steamID64] = {}
-    --    return
-    --end 
+    if not zb.GuiltSQL.Active then
+        zb.GuiltSQL.PlayerInstances[steamID64] = zb.GuiltSQL.PlayerInstances[steamID64] or {}
+        zb.GuiltSQL.PlayerInstances[steamID64].value = zb.GuiltSQL.PlayerInstances[steamID64].value or 100
+
+        ply.Karma = ply:guilt_GetValue()
+        ply:SetNetVar("Karma", ply.Karma)
+
+        return
+    end 
 
 	local query = mysql:Select("zb_guilt")
 		query:Select("value")
@@ -121,6 +127,8 @@ hook.Add("HomigradDamage", "GuiltReg", function(ply, dmgInfo, hitgroup, ent, har
 
     if not IsValid(Attacker) or not Attacker:IsPlayer() then return end
     if not IsValid(Victim) or not (Victim:IsPlayer() or (Victim.organism.fakePlayer and Victim.organism.alive)) then return end
+
+    if hg_fuckguilt:GetBool() then return end
 
     local id = Victim:IsPlayer() and Victim:SteamID() or Victim:EntIndex()
     local id2 = Attacker:IsPlayer() and Attacker:SteamID() or Attacker:EntIndex()
@@ -222,11 +230,7 @@ hook.Add("HomigradDamage", "GuiltReg", function(ply, dmgInfo, hitgroup, ent, har
     zb.HarmDoneKarma[Victim][Attacker] = zb.HarmDoneKarma[Victim][Attacker] + add
 
     if shouldBanGuilt and Attacker.Guilt >= 100 then
-		-- if ULib then
-        	ULib.addBan( Attacker:SteamID(), 30, "Kicked and banned for dealing too much team damage.", Attacker:Name(), "System" )
-		-- else
-		-- 	Attacker:Ban(30, true)
-		-- end
+        ULib.addBan( Attacker:SteamID(), 30, "Kicked and banned for dealing too much team damage.", Attacker:Name(), "System" )
 
         PrintMessage(HUD_PRINTTALK, "Player "..Attacker:Name().." has been banned for 30 minutes for RDMing in a team based gamemode.")
     end
@@ -251,11 +255,7 @@ hook.Add("HomigradDamage", "GuiltReg", function(ply, dmgInfo, hitgroup, ent, har
 
             local time = math.Round(60 - karma * 4, 0)
 
-			-- if ULib then
-				ULib.addBan( steamID, 60, "Kicked and banned for having too low karma.", name, "System" )
-			-- else
-			-- 	Attacker:Ban(60, true)
-			-- end
+            ULib.addBan( steamID, 60, "Kicked and banned for having too low karma.", name, "System" )
             
             PrintMessage(HUD_PRINTTALK, "Player "..name.." has been banned for "..time.." minutes for having too low karma.")
         end)
@@ -282,26 +282,26 @@ hook.Add("PlayerDisconnected","GuiltSaveOnDisconect",function(ply)
     ply:guilt_SetValue( ply.Karma or 100 )
 end)
 
-hook.Add("Player Spawn","SlowlyRestoreKarma",function(ply)
+hook.Add("PlayerSpawn", "SlowlyRestoreKarma", function(ply)
     if OverrideSpawn then return end
 
     ply.lastwarning = nil
-    //ply.firstwarning = nil
     ply.Karma = ply.Karma or 100
-    ply:SetNetVar("Karma",ply.Karma)
-    //ply:guilt_SetValue( ply.Karma or 100 )
-    
+    ply:SetNetVar("Karma", ply.Karma)
     ply.Guilt = 0
 end)
 
-hook.Add("Player Think", "karmagain", function(ply)
+hook.Add("PlayerTick", "karmagain", function(ply)
     if (ply.KarmaGainThink or 0) > CurTime() then return end
     ply.KarmaGainThink = CurTime() + 120
 
-    ply.Karma = math.Clamp(ply.Karma + (ply.Karma > 100 and 0.1 or (ply.KarmaGain or 0.75)), 0, zb.MaxKarma)// * (1 + ply:HasPurchase("zpremium")), 0, zb.MaxKarma)
-    
+    ply.Karma = math.Clamp(
+        (ply.Karma or 100) + (ply.Karma > 100 and 0.1 or (ply.KarmaGain or 0.75)),
+        0,
+        zb.MaxKarma
+    )
+
     ply:SetNetVar("Karma", ply.Karma)
-    //ply:guilt_SetValue( ply.Karma or 100 )
 end)
 
 hook.Add("Org Clear","removekarmashaking",function(org)
@@ -312,60 +312,15 @@ hook.Add("Should Fake Up", "karma", function(ply)
     if ply.organism and ply.organism.start_shaking then return false end
 end)
 
-local seizuremsgs = {
-    "bllllhlhmmmbmmmmbmbmb",
-    "bbb b-bbbbbb bllmbmmbb",
-    "ddgdgg-d bbbglgggg",
-    "mmmmammmm aaghbgbblllb",
-    "hhel-bbbphphpppph",
-    "zzzzblzzzmzzzzz",
-}
-hook.Add("Org Think", "Its_Karma_Bro",function(owner, org, timeValue)
-    if not owner or not owner:IsPlayer() or org.otrub or not org.isPly then return end
-    if not owner:IsPlayer() or not owner:Alive() then return end
-    
-    local ply = owner
-    
-    if (ply.Karma or 100) < 50 then
-        if ((math.random(math.Clamp((ply.Karma or 100),20,zb.MaxKarma) * 300) == 1 or org.start_shaking)) then
-            hg.StunPlayer(ply)
-            local time = 15
-            
-            ply:Notify(seizuremsgs[math.random(#seizuremsgs)], 16, "seizure", 1, function()
-                if !IsValid(ply) then return end
-                
-                ply:ChatPrint("You are experiencing an epileptic seizure.")
-            end)
-
-            org.start_shaking = org.start_shaking or (CurTime() + time)
-            local ent = hg.GetCurrentCharacter(owner)
-            local mul = ((org.start_shaking) - CurTime()) / time
-            
-            if mul > 0 then
-                ent:GetPhysicsObjectNum(math.random(ent:GetPhysicsObjectCount()) - 1):ApplyForceCenter(VectorRand(-750 * mul,750 * mul))
-            else
-                org.start_shaking = nil
-            end
-        else
-            org.start_shaking = nil
-        end
-	end
-
-    if (ply.Karma or 100) < 35 then
-        if math.random(2000) == 1 then
-            hg.organism.Vomit(owner)
-        end
-    end
-end)
 
 hook.Add("ZB_EndRound","savevalues",function()
-    for i,ply in player.Iterator() do
+    for i,ply in ipairs(player.GetAll()) do
         ply:guilt_SetValue( ply.Karma or 100 )
     end
 end)
 
 hook.Add("ZB_StartRound","NO_HARM",function()
-    for i,ply in player.Iterator() do
+    for i,ply in ipairs(player.GetAll()) do
         if (ply.Guilt or 0) < 1 then
             ply.KarmaGain = math.Clamp((ply.KarmaGain or 0.75) + 0.25, 0.75, 1.5)
         else
@@ -385,7 +340,7 @@ net.Receive("get_karma",function(len, ply)
 
     local tbl = {}
 
-    for i,pl in player.Iterator() do
+    for i,pl in ipairs(player.GetAll()) do
         tbl[pl:UserID()] = pl.Karma
     end
 
