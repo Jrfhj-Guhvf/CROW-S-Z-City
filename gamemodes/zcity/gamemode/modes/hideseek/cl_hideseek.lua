@@ -1,22 +1,11 @@
 local MODE = MODE
 MODE.name = "hideseek"
-local song
-local songfade = 0
-local song2
-local song2fade = 0
-local ashStarted = false
 local roundEnding = false
-net.Receive("criresp_start", function()
-    ashStarted = false
-    roundEnding = false
-    if IsValid(song2) then song2:Stop() song2 = nil end
-    song2fade = 0
+net.Receive("hns_start", function()
     timer.Simple(0.2, function()
         sound.PlayFile("sound/zbattle/criresp/criepmission.mp3", "mono noblock", function(station)
             if IsValid(station) then
                 station:Play()
-                song = station
-                songfade = 1
             end
         end)
     end)
@@ -70,7 +59,7 @@ function MODE:HUDPaint()
     end
 
     if lply:Team() == 2 then
-        local arrive = arriveShooter
+        local arrive = (zb.ROUND_START + 60) - CurTime()
         local t = CurTime()
         local active = t < arrive
         local fadeout = math.Clamp((arrive + 1.5 - t) / 1.5, 0, 1)
@@ -113,7 +102,7 @@ function MODE:HUDPaint()
 end
 
 local CreateEndMenu
-net.Receive("cri_roundend", function()
+net.Receive("hns_roundend", function()
     roundEnding = true
     CreateEndMenu(net.ReadBool())
 end)
