@@ -1,221 +1,300 @@
-local MODE = MODE
-
 MODE.name = "hideseek"
 MODE.PrintName = "Hide and Seek"
-MODE.HidingTime = MODE.HidingTime or 40
-MODE.ROUND_TIME = MODE.ROUND_TIME or 600
-MODE.randomSpawns = true
-MODE.OverrideSpawn = true
-MODE.LootSpawn = false
+
 MODE.ForBigMaps = false
+MODE.ROUND_TIME = 480
+MODE.LootSpawn = true
+
 MODE.Chance = 0.03
 
-local seekerRoleColor = Color(220, 60, 60)
-local hiderRoleColor = Color(60, 140, 230)
-
-util.AddNetworkString("hideseek_start")
-util.AddNetworkString("hideseek_roundend")
-
-local function Shuffle(tbl)
-	for i = #tbl, 2, -1 do
-		local j = math.random(i)
-		tbl[i], tbl[j] = tbl[j], tbl[i]
-	end
-end
-
-function MODE:CanLaunch()
-	return true
-end
-
 function MODE.GuiltCheck(Attacker, Victim, add, harm, amt)
-	return 1, true
+	return 1, true--returning true so guilt bans
 end
 
-function MODE:PickSeekerCount(count)
-	if count <= 3 then return 1 end
-	if count <= 6 then return 2 end
-	if count <= 9 then return 3 end
-	return math.max(1, math.floor(count / 4))
+function shuffle(tbl)
+	local len = #tbl
+	for i = len, 2, -1 do
+	  local j = math.random(i)
+	  tbl[i], tbl[j] = tbl[j], tbl[i]
+	end
 end
 
+function MODE:AssignTeams()
+    local players = player.GetAll()
+    local numPlayers = #players
+
+    shuffle(players)
+    if numPlayers == 0 then return end
+
+    local shooters = 1
+    if numPlayers >= 15 then
+        shooters = 3
+    elseif numPlayers >= 10 then
+        shooters = 2
+    end
+
+    self.ShooterIndex = {}
+
+    local shooterCount = 0
+
+    for i = 1, numPlayers do
+        local ply = players[i]
+        if not IsValid(ply) then continue end
+
+        if shooterCount < shooters then
+            shooterCount = shooterCount + 1
+            ply:SetTeam(2)
+            self.ShooterIndex[ply] = shooterCount
+        else
+            ply:SetTeam(1)
+        end
+    end
+end
+
+util.AddNetworkString("criresp_start")
 function MODE:Intermission()
-	game.CleanUpMap()
+    game.CleanUpMap()
+    hg.UpdateRoundTime(self.ROUND_TIME)
+    self:AssignTeams()
 
-	self.saved = self.saved or {}
-	self.saved.Winner = nil
+    for k, ply in ipairs(player.GetAll()) do
+        if ply:Team() == TEAM_SPECTATOR or ply:Team() == 0 or ply:Team() == 2 then ply:KillSilent() continue end
+        ply:SetupTeam(ply:Team())
+    end
 
-	local players = {}
-	for _, ply in player.Iterator() do
-		if ply:Team() == TEAM_SPECTATOR then continue end
-		table.insert(players, ply)
-		ply.hs_seeker = false
-		ply:SetNWBool("HS_Seeker", false)
-	end
-
-	if #players == 0 then return end
-
-	Shuffle(players)
-
-	local seekerCount = self:PickSeekerCount(#players)
-	for i, ply in ipairs(players) do
-		local isSeeker = i <= seekerCount
-		ply.hs_seeker = isSeeker
-		ply:SetNWBool("HS_Seeker", isSeeker)
-		ply:SetTeam(isSeeker and 0 or 1)
-		zb.GiveRole(ply, isSeeker and "Seeker" or "Hider", isSeeker and seekerRoleColor or hiderRoleColor)
-		ply:SetupTeam(ply:Team())
-		if not isSeeker then
-			ply:Spawn()
-		else
-			if ply:Alive() then
-				ply:KillSilent()
-			end
-		end
-	end
-
-	net.Start("hideseek_start")
-		net.WriteFloat(self.HidingTime or 40)
+	net.Start("criresp_start")
 	net.Broadcast()
+
 end
 
-function MODE:CanSpawn(ply)
-	if ply and ply.hs_seeker and GetGlobalBool("ZB_HS_HidingPhase", false) then
-		return false
-	end
-	return true
+function MODE:CheckAlivePlayers()
+    local swatPlayers = {}
+    local victimPlayers = {}
+    local shooterPlayers = {}
+
+    for _, ply in ipairs(team.GetPlayers(0)) do
+        if ply:Alive() and not ply:GetNetVar("handcuffed", false) then
+            table.insert(swatPlayers, ply)
+        end
+    end
+
+    for _, ply in ipairs(team.GetPlayers(1)) do
+        if ply:Alive() and not ply:GetNetVar("handcuffed", false) then
+            table.insert(victimPlayers, ply)
+        end
+    end
+
+    for _, ply in ipairs(team.GetPlayers(2)) do
+        if ply:Alive() and not ply:GetNetVar("handcuffed", false) then
+            table.insert(shooterPlayers, ply)
+        end
+    end
+
+    return {swatPlayers, victimPlayers, shooterPlayers}
 end
+
+
+
+
+
+function MODE:ShouldRoundEnd()
+    if zb.ROUND_START + 61 > CurTime() then return false end
+    local aliveTeams = self:CheckAlivePlayers()
+    -- end the round once SWAT is present and shooter is gone
+    if CurTime() >= (zb.ROUND_START + 240) and table.Count(aliveTeams[3]) == 0 then
+        return true
+    end
+    local endround = zb:CheckWinner(aliveTeams)
+    return endround
+end
+
+
 
 function MODE:RoundStart()
-	local hideEnd = CurTime() + (self.HidingTime or 40)
-	SetGlobalFloat("ZB_HS_HideEnd", hideEnd)
-	SetGlobalBool("ZB_HS_HidingPhase", true)
-
-	timer.Remove("HS_HidePhaseEnd")
-	timer.Create("HS_HidePhaseEnd", self.HidingTime or 40, 1, function()
-		SetGlobalBool("ZB_HS_HidingPhase", false)
-		for _, ply in player.Iterator() do
-			if not ply.hs_seeker then continue end
-			if not ply:Alive() then
-				ply:Spawn()
-			end
-			EquipSeeker(ply)
-		end
-	end)
-
-	for _, ply in player.Iterator() do
-		if ply.hs_seeker and ply:Alive() then
-			ply:KillSilent()
-		end
-	end
+    
 end
 
-local function FinishEquip(ply)
-	timer.Simple(0.1, function()
-		if IsValid(ply) then
-			ply.noSound = false
-			ply:SetSuppressPickupNotices(false)
-		end
-	end)
-end
+MODE.LootTable = {
+	{100, {
+		{10,"weapon_ducttape"},
+		{10,"weapon_matches"},
+		{10,"weapon_bigconsumable"},
+		{10,"weapon_smallconsumable"},
+		{8,"weapon_painkillers"},
+		{8,"weapon_bandage_sh"},
+		{5,"weapon_medkit_sh"},
+		{3,"weapon_leadpipe"},
+		{5,"weapon_pocketknife"},
+		{5,"weapon_bat"},
+		{5,"weapon_hammer"},
+		{5,"weapon_hg_bottle"},
+	}}
+}
 
-function EquipSeeker(ply)
-	if not IsValid(ply) then return end
-	ply:SetSuppressPickupNotices(true)
-	ply.noSound = true
-	ply:StripWeapons()
-	ply:RemoveAllAmmo()
-	hg.AddArmor(ply, {"vest3", "helmet1"})
-	local ruger = ply:Give("weapon_ruger")
-	if IsValid(ruger) and ruger.GetMaxClip1 then
-		ply:GiveAmmo(ruger:GetMaxClip1() * 3, ruger:GetPrimaryAmmoType(), true)
-	end
-	local glock = ply:Give("weapon_glock17")
-	if IsValid(glock) and glock.GetMaxClip1 then
-		ply:GiveAmmo(glock:GetMaxClip1() * 3, glock:GetPrimaryAmmoType(), true)
-	end
-	ply:Give("weapon_hands_sh")
-	ply:SelectWeapon("weapon_hands_sh")
-	FinishEquip(ply)
-end
-
-function EquipHider(ply)
-	if not IsValid(ply) then return end
-	ply:SetSuppressPickupNotices(true)
-	ply.noSound = true
-	ply:StripWeapons()
-	ply:RemoveAllAmmo()
-	ply:Give("weapon_ducttape")
-	ply:Give("weapon_hands_sh")
-	ply:SelectWeapon("weapon_hands_sh")
-	FinishEquip(ply)
+function MODE:CanLaunch()
+    return true
 end
 
 function MODE:GiveEquipment()
-	timer.Simple(0.1, function()
-		local hiding = GetGlobalBool("ZB_HS_HidingPhase", false)
-		for _, ply in player.Iterator() do
-			if ply:Team() == TEAM_SPECTATOR then continue end
-			if not ply:Alive() then continue end
-			if ply.hs_seeker then
-				if hiding then continue end
-				EquipSeeker(ply)
-			else
-				EquipHider(ply)
-			end
+    timer.Simple(0.5,function()
+        self.SWATQueue = {}
+        self.SWATQueueSet = {}
+
+        for i, ply in ipairs(player.GetAll()) do
+            if ply:Team() == TEAM_SPECTATOR then continue end
+
+            if ply:Team() == 2 then
+                timer.Create("ShooterSpawn"..ply:EntIndex(), 60, 1, function()
+                    ply:Spawn()
+                    ply:SetSuppressPickupNotices(true)
+                    ply.noSound = true
+
+                    ply:SetupTeam(ply:Team())
+                    ply:SetPlayerClass("default")
+
+                    zb.GiveRole(ply, "Seeker", Color(190,0,0))
+
+                    hg.AddArmor(ply, {"ent_armor_vest4","ent_armor_helmet2"})
+
+                    local inv = ply:GetNetVar("Inventory") or {}
+                    inv["Weapons"] = inv["Weapons"] or {}
+                    inv["Weapons"]["hg_sling"] = true
+                    --inv["Weapons"]["hg_melee_belt"] = true	mcity only thing
+                    inv["Weapons"]["hg_flashlight"] = true
+                    inv["Weapons"]["hg_brassknuckles"] = true
+                    ply:SetNetVar("Inventory", inv)
+
+                    local function giveWithReserve(class)
+                        local wep = ply:Give(class)
+                        if IsValid(wep) and wep.GetMaxClip1 and wep.GetPrimaryAmmoType and wep:GetMaxClip1() > 0 then
+                            ply:GiveAmmo(wep:GetMaxClip1() * 2, wep:GetPrimaryAmmoType(), true)
+                        end
+                    end
+
+                    local shooterIndex = (self.ShooterIndex and self.ShooterIndex[ply]) or 1
+
+                    if shooterIndex == 1 then
+                        giveWithReserve("weapon_ruger")
+                        giveWithReserve("weapon_ab10")
+						giveWithReserve("weapon_hg_pipebomb_tpik")
+                    elseif shooterIndex == 2 then
+                        giveWithReserve("weapon_m590a1")
+                        giveWithReserve("weapon_glock26")
+						giveWithReserve("weapon_hg_molotov_tpik")
+                    elseif shooterIndex == 3 then
+                        giveWithReserve("weapon_mini14")
+                        giveWithReserve("weapon_tec9")
+						ply:Give("weapon_adrenaline")
+                    else
+                        giveWithReserve("weapon_ruger")
+                        giveWithReserve("weapon_ab10")
+						giveWithReserve("weapon_hg_pipebomb_tpik")
+						ply:Give("weapon_hg_molotov_tpik")
+                    end
+
+                    ply:Give("weapon_buck200knife")
+                    ply:Give("weapon_fentanyl")
+
+                    ply:Give("weapon_hands_sh")
+
+                    ply:SetSuppressPickupNotices(false)
+                    ply.noSound = false
+                end)
+            else
+                ply:SetSuppressPickupNotices(true)
+                ply.noSound = true
+
+                ply:SetPlayerClass("default")
+
+                zb.GiveRole(ply, "Hider", Color(0,190,190))
+
+                ply:Give("weapon_hands_sh")
+
+                ply:SetSuppressPickupNotices(false)
+                ply.noSound = false
+            end
+
+			timer.Simple(0.5,function()
+				ply.noSound = false
+			end)
+
+			ply:SetSuppressPickupNotices(false)
 		end
-	end)
+
+        timer.Create("SWATArrival", 240, 1, function()
+            for _, ply in ipairs(team.GetPlayers(2)) do
+                if IsValid(ply) and ply:Alive() then
+                    local pos = ply:GetPos()
+                    sound.Play("c4explode.wav", pos, 140, 120, 1)
+                    ParticleEffect("pcf_jack_groundsplode_medium", pos, Angle(0,0,0))
+                    if hg and hg.ExplosionEffect then
+                        hg.ExplosionEffect(pos, 500, 80)
+                    end
+                    util.BlastDamage(ply, ply, pos, 500, 1000)
+                    ply:Kill()
+                end
+            end
+            self.SWATQueue = {}
+            self.SWATQueueSet = {}
+        end)
+    end)
 end
 
-function MODE:CheckAlive()
-	local seekers = 0
-	local hiders = 0
-	for _, ply in player.Iterator() do
-		if ply:Team() == TEAM_SPECTATOR then continue end
-		if not ply:Alive() then continue end
-		if ply.organism and ply.organism.incapacitated then continue end
-		if ply.hs_seeker then
-			seekers = seekers + 1
-		else
-			hiders = hiders + 1
-		end
-	end
-	return seekers, hiders
+function MODE:SpawnSWAT(ply)
 end
 
-function MODE:ShouldRoundEnd()
-	if GetGlobalBool("ZB_HS_HidingPhase", false) then
-		return nil
-	end
-	local seekers, hiders = self:CheckAlive()
-	if hiders == 0 then
-		self.saved.Winner = 0
-		return true
-	end
-	if seekers == 0 then
-		self.saved.Winner = 1
-		return true
-	end
-	return nil
+function MODE:RoundThink()
 end
 
+function MODE:GetTeamSpawn()
+	return {zb:GetRandomSpawn()}, {zb:GetRandomSpawn()}
+end
+
+function MODE:CanSpawn()
+end
+
+util.AddNetworkString("cri_roundend")
 function MODE:EndRound()
-	timer.Remove("HS_HidePhaseEnd")
-	SetGlobalBool("ZB_HS_HidingPhase", false)
-
-	local winner = self.saved and self.saved.Winner
-	if winner == nil then
-		local timeUp = (zb.ROUND_START or 0) + (self.ROUND_TIME or 600) <= CurTime()
-		if timeUp then
-			winner = 2
-		else
-			local seekers, hiders = self:CheckAlive()
-			winner = hiders > 0 and 1 or 0
+	for k,ply in player.Iterator() do
+		if timer.Exists("SWATSpawn"..ply:EntIndex()) then
+			timer.Remove("SWATSpawn"..ply:EntIndex())
+		end
+		if timer.Exists("ShooterSpawn"..ply:EntIndex()) then
+			timer.Remove("ShooterSpawn"..ply:EntIndex())
 		end
 	end
+	if timer.Exists("SWATSpawn") then
+		timer.Remove("SWATSpawn")
+	end
+	if timer.Exists("SWATArrival") then
+		timer.Remove("SWATArrival")
+	end
+	self.SWATQueue = {}
+	self.SWATQueueSet = {}
 
-	timer.Simple(1, function()
-		net.Start("hideseek_roundend")
-			net.WriteUInt(winner or 2, 2)
+    local aliveTeams = self:CheckAlivePlayers()
+    local endround, winner = zb:CheckWinner(aliveTeams)
+    -- force SWAT win if shooter is eliminated after SWAT arrival
+    if CurTime() >= (zb.ROUND_START + 240) and table.Count(aliveTeams[3]) == 0 then
+        endround = true
+        winner = 0
+    end
+
+	timer.Simple(2,function()
+		net.Start("cri_roundend")
+			net.WriteBool(winner)
 		net.Broadcast()
 	end)
+
+	for k,ply in player.Iterator() do
+		if ply:Team() == winner then
+			ply:GiveExp(math.random(15,30))
+			ply:GiveSkill(math.Rand(0.1,0.15))
+		else
+			ply:GiveSkill(-math.Rand(0.05,0.1))
+		end
+	end
+end
+
+function MODE:PlayerDeath(_, ply)
 end
