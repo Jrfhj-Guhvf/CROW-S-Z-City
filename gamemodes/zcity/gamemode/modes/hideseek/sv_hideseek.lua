@@ -150,7 +150,7 @@ function MODE:GiveEquipment()
                     ply.noSound = true
 
                     ply:SetupTeam(ply:Team())
-                    ply:SetPlayerClass()
+                    ply:SetPlayerClass("default")
 
                     zb.GiveRole(ply, "Seeker", Color(190,0,0))
 
@@ -159,7 +159,7 @@ function MODE:GiveEquipment()
                     local inv = ply:GetNetVar("Inventory") or {}
                     inv["Weapons"] = inv["Weapons"] or {}
                     inv["Weapons"]["hg_sling"] = true
-                    inv["Weapons"]["hg_melee_belt"] = true
+                    --inv["Weapons"]["hg_melee_belt"] = true	mcity only thing
                     inv["Weapons"]["hg_flashlight"] = true
                     inv["Weapons"]["hg_brassknuckles"] = true
                     ply:SetNetVar("Inventory", inv)
@@ -178,8 +178,8 @@ function MODE:GiveEquipment()
                         giveWithReserve("weapon_ab10")
 						giveWithReserve("weapon_hg_pipebomb_tpik")
                     elseif shooterIndex == 2 then
-                        giveWithReserve("weapon_saiga12")
-                        giveWithReserve("weapon_glock18c")
+                        giveWithReserve("weapon_m590a1")
+                        giveWithReserve("weapon_glock26")
 						giveWithReserve("weapon_hg_molotov_tpik")
                     elseif shooterIndex == 3 then
                         giveWithReserve("weapon_mini14")
@@ -204,7 +204,7 @@ function MODE:GiveEquipment()
                 ply:SetSuppressPickupNotices(true)
                 ply.noSound = true
 
-                ply:SetPlayerClass()
+                ply:SetPlayerClass("default")
 
                 zb.GiveRole(ply, "Hider", Color(0,190,190))
 
