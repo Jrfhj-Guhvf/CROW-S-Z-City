@@ -27,9 +27,11 @@ function MODE:AssignTeams()
     if numPlayers == 0 then return end
 
     local shooters = 1
-    if numPlayers >= 15 then
-        shooters = 3
-    elseif numPlayers >= 10 then
+    if numPlayers >= 25 then
+        shooters = 4
+    elseif numPlayers >= 15 then
+        shooters = 3    
+	elseif numPlayers >= 10 then
         shooters = 2
     end
 
@@ -184,7 +186,12 @@ function MODE:GiveEquipment()
                     elseif shooterIndex == 3 then
                         giveWithReserve("weapon_mini14")
                         giveWithReserve("weapon_tec9")
-						ply:Give("weapon_adrenaline")
+						ply:Give("weapon_adrenaline")                    
+					elseif shooterIndex == 4 then
+                        giveWithReserve("weapon_akmwreked")
+                        giveWithReserve("weapon_pl15")
+						giveWithReserve("weapon_mp-80")
+						ply:Give("weapon_hg_pipebomb_tpik")
                     else
                         giveWithReserve("weapon_ruger")
                         giveWithReserve("weapon_ab10")
@@ -194,6 +201,7 @@ function MODE:GiveEquipment()
 
                     ply:Give("weapon_buck200knife")
                     ply:Give("weapon_fentanyl")
+                    ply:Give("weapon_walkie_talkie")
 
                     ply:Give("weapon_hands_sh")
 
