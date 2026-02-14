@@ -1,4 +1,54 @@
 local MODE = MODE
+local HNS_SCHIZO_PHRASES = {
+    "KILL THEM ALL",
+    "THEY DESERVE WHAT'S COMING",
+    "DON'T LET THEM HIDE",
+    "THEY'RE WATCHING",
+    "END IT",
+    "NO MERCY",
+    "MAKE THEM PAY",
+    "LISTEN TO THE VOICES",
+    "FINISH THE HUNT",
+    "BLOOD FOR BLOOD",
+}
+
+local hnsSchizoNextAt = 0
+local hnsSchizoShowUntil = 0
+local hnsSchizoBatch = {}
+
+hook.Add("HUDPaint", "HNS_SchizoFlashes", function()
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return end
+    if not ply:GetNetVar("HNS_Schizo", false) then return end
+
+    local t = CurTime()
+
+    -- Show for 5 seconds, then wait 10 seconds before next burst
+    if hnsSchizoShowUntil == 0 or (t >= hnsSchizoShowUntil and t >= hnsSchizoNextAt) then
+        hnsSchizoBatch = {}
+        for i = 1, 12 do
+            hnsSchizoBatch[i] = HNS_SCHIZO_PHRASES[math.random(#HNS_SCHIZO_PHRASES)]
+        end
+        hnsSchizoShowUntil = t + 5
+        hnsSchizoNextAt = hnsSchizoShowUntil + 10
+    end
+
+    if t < hnsSchizoShowUntil then
+        local w, h = ScrW(), ScrH()
+        local alpha = math.Clamp(200 + 55 * math.sin(t * 15), 80, 255)
+        surface.SetFont("Trebuchet24")
+        for i = 1, #hnsSchizoBatch do
+            local x = math.random(math.floor(w * 0.1), math.floor(w * 0.9))
+            local y = math.random(math.floor(h * 0.1), math.floor(h * 0.9))
+            draw.SimpleTextOutlined(
+                hnsSchizoBatch[i], "Trebuchet24", x, y,
+                Color(255, 0, 0, alpha),
+                TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER,
+                1, Color(0, 0, 0, alpha * 0.6)
+            )
+        end
+    end
+end)
 MODE.name = "hideseek"
 local roundEnding = false
 net.Receive("hns_start", function()
@@ -19,13 +69,13 @@ local teams = {
         color2 = Color(68, 10, 255)
     },
     [1] = {
-        objective = "Hide from the Seekers, they'll arrive shortly.",
+        objective = "Some people have bad intentions. Hide from the Seekers, they'll arrive shortly.",
         name = "Hider",
         color1 = Color(0, 190, 190),
         color2 = Color(0, 190, 190)
     },
     [2] = {
-        objective = "",
+        objective = "Can't turn back now, kill all the hiders.",
         name = "Seeker",
         color1 = Color(255, 0, 0),
         color2 = Color(228, 49, 49)

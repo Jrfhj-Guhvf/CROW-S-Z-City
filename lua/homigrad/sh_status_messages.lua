@@ -98,7 +98,18 @@ local fear_phrases = {
 	"Breathe. Just breathe.",
 	"Cold hands. Steady hands.",
 }
-
+local schizo_monologue = {
+    "They're whispering again.",
+    "Keep your hands steady.",
+    "Don't trust the silence.",
+    "Every shadow breathes.",
+    "They think you're not watching.",
+    "The hunt never ends.",
+    "Footsteps. Heartbeat. Close.",
+    "They will run. You will end it.",
+    "No turning back.",
+    "Quiet. Listen. Move.",
+}
 local is_aimed_at_phrases = {
     "Oh God. This is it.",
     "Don't. move.",
@@ -295,6 +306,9 @@ end
 
 function hg.likely_to_phrase(ply)
 	local org = ply.organism
+	if ply.GetNetVar and ply:GetNetVar("HNS_Schizo", false) and zb and ((zb.CROUND_MAIN == "hideseek") or (zb.CROUND == "hideseek")) then
+    return 3
+end
 
 	local pain = org.pain
 	local brain = org.brain
@@ -341,6 +355,10 @@ local function get_status_message(ply)
 	local temperature = org.temperature
 	local blood = org.blood
 	local hungry = org.hungry
+	local isHNS = (zb and ((zb.CROUND_MAIN == "hideseek") or (zb.CROUND == "hideseek"))) or false
+if isHNS and ply.GetNetVar and ply:GetNetVar("HNS_Schizo", false) then
+    return schizo_monologue[math.random(#schizo_monologue)]
+end
 	local broken_dislocated = org.just_damaged_bone and ((org.just_damaged_bone + 3 - CurTime()) < -3)
 
 	if broken_dislocated and org.just_damaged_bone then

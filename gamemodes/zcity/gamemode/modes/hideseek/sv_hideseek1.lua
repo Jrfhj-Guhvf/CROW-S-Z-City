@@ -1,3 +1,4 @@
+MODE = MODE or {}
 MODE.name = "hideseek"
 MODE.PrintName = "Hide and Seek"
 
@@ -6,6 +7,10 @@ MODE.ROUND_TIME = 480
 MODE.LootSpawn = true
 
 MODE.Chance = 0.03
+
+function MODE:OverrideBalance()
+    return true
+end
 
 function MODE.GuiltCheck(Attacker, Victim, add, harm, amt)
 	return 1, true--returning true so guilt bans
@@ -27,7 +32,13 @@ function MODE:AssignTeams()
     if numPlayers == 0 then return end
 
     local shooters = 1
-    if numPlayers >= 15 then
+    if numPlayers >= 30 then
+        shooters = 6
+    elseif numPlayers >= 25 then
+        shooters = 5
+    elseif numPlayers >= 20 then
+        shooters = 4
+    elseif numPlayers >= 15 then
         shooters = 3
     elseif numPlayers >= 10 then
         shooters = 2
@@ -172,11 +183,13 @@ function MODE:GiveEquipment()
                     end
 
                     local shooterIndex = (self.ShooterIndex and self.ShooterIndex[ply]) or 1
+                        ply:SetNetVar("HNS_Schizo", false)
 
                     if shooterIndex == 1 then
                         giveWithReserve("weapon_ruger")
                         giveWithReserve("weapon_ab10")
 						giveWithReserve("weapon_hg_pipebomb_tpik")
+                        ply:SetNetVar("HNS_Schizo", true)
                     elseif shooterIndex == 2 then
                         giveWithReserve("weapon_m590a1")
                         giveWithReserve("weapon_glock26")
@@ -185,6 +198,21 @@ function MODE:GiveEquipment()
                         giveWithReserve("weapon_mini14")
                         giveWithReserve("weapon_tec9")
 						ply:Give("weapon_adrenaline")
+                    elseif shooterIndex == 4 then
+                        giveWithReserve("weapon_akmwreked")
+                        giveWithReserve("weapon_pl15")
+                        giveWithReserve("weapon_mp-80")
+						ply:Give("weapon_hg_pipebomb_tpik")
+                    elseif shooterIndex == 5 then
+                        giveWithReserve("weapon_ar15")
+                        giveWithReserve("weapon_cz75")
+						ply:Give("weapon_hg_jam")
+                    elseif shooterIndex == 6 then
+                        giveWithReserve("weapon_m16a2")
+                        giveWithReserve("weapon_m1911")
+                        ply:Give("weapon_hg_type59_tpik")
+
+
                     else
                         giveWithReserve("weapon_ruger")
                         giveWithReserve("weapon_ab10")
@@ -241,6 +269,7 @@ function MODE:GiveEquipment()
 end
 
 function MODE:SpawnSWAT(ply)
+    return
 end
 
 function MODE:RoundThink()
@@ -269,7 +298,12 @@ function MODE:EndRound()
 	if timer.Exists("SWATArrival") then
 		timer.Remove("SWATArrival")
 	end
-	self.SWATQueue = {}
+	for _, ply in player.Iterator() do
+    if IsValid(ply) then
+        ply:SetNetVar("HNS_Schizo", false)
+    end
+end
+    self.SWATQueue = {}
 	self.SWATQueueSet = {}
 
     local aliveTeams = self:CheckAlivePlayers()
