@@ -44,7 +44,6 @@ local function ApplyRagdollPluviverseSpawn(ply, spawnEnt)
     ply.noSound = true
     ply:StripWeapons()
     ply:Give("weapon_hands_sh")
-    ply:ConCommand("hg_thirdperson 1")
     local groundPos = Vector(0,0,0)
     if IsValid(spawnEnt) then
         groundPos = spawnEnt:GetPos()
@@ -97,14 +96,12 @@ for _, song in ipairs(ragdollPluviverseSongs) do
 end
 
 function MODE:CanLaunch()
-    return true
+    return false
 end
 
 function MODE:EndRound()
-    for _, ply in player.Iterator() do
-        ply:ConCommand("hg_thirdperson 0")
-        ply:ConCommand("hg_ragdollcombat 0")
-    end
+    RunConsoleCommand("hg_thirdperson", "0")
+    RunConsoleCommand("hg_ragdollcombat", "0")
     net.Start("ragdoll_pluviverse_end")
     net.Broadcast()
 end
@@ -125,6 +122,8 @@ function MODE:Intermission()
 end
 
 function MODE:RoundStart()
+    RunConsoleCommand("hg_thirdperson", "1")
+    RunConsoleCommand("hg_ragdollcombat", "1")
     -- Initial loot spawn
     local spawns = zb.GetMapPoints("RandomSpawns")
     if spawns and #spawns > 0 then
@@ -190,10 +189,8 @@ end)
 
 hook.Add("ZB_EndRound", "RagdollPluviverseEndRound", function()
     if zb and zb.CROUND == "ragdoll_pluviverse" then
-        for _, ply in player.Iterator() do
-            ply:ConCommand("hg_thirdperson 0")
-            ply:ConCommand("hg_ragdollcombat 0")
-        end
+        RunConsoleCommand("hg_thirdperson", "0")
+        RunConsoleCommand("hg_ragdollcombat", "0")
         net.Start("ragdoll_pluviverse_end")
         net.Broadcast()
     end
