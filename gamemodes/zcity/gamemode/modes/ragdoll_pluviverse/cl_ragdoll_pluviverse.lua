@@ -58,31 +58,12 @@ end
 net.Receive("ragdoll_pluviverse_start", function()
     zb.RemoveFade()
     ragdollPluviverseActive = true
-    RunConsoleCommand("hg_thirdperson", "1")
-    RunConsoleCommand("hg_ragdollcombat", "1")
     PlayRagdollPluviverseMusic(net.ReadString())
 end)
 
 net.Receive("ragdoll_pluviverse_end", function()
     ragdollPluviverseActive = false
-    RunConsoleCommand("hg_thirdperson", "0")
-    RunConsoleCommand("hg_ragdollcombat", "0")
-    timer.Simple(0.1, function()
-        RunConsoleCommand("hg_thirdperson", "0")
-        RunConsoleCommand("hg_ragdollcombat", "0")
-    end)
     StopRagdollPluviverseMusic()
-end)
-
-hook.Add("Think", "RagdollPluviverseForceSettings", function()
-    if ragdollPluviverseActive then
-        if GetConVar("hg_thirdperson"):GetInt() == 0 then
-            RunConsoleCommand("hg_thirdperson", "1")
-        end
-        if GetConVar("hg_ragdollcombat"):GetInt() == 0 then
-            RunConsoleCommand("hg_ragdollcombat", "1")
-        end
-    end
 end)
 
 local fighter = {
