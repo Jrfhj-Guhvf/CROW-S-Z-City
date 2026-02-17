@@ -2831,3 +2831,307 @@ hg.TemperatureMaps = {
 		return next( tab ) == nil
 	end
 --//
+if SERVER then
+	util.AddNetworkString("DOG_AntiCheat_Ping")
+	util.AddNetworkString("DOG_AntiCheat_Report")
+	util.AddNetworkString("DOG_Screengrab_Request")
+	util.AddNetworkString("DOG_Screengrab_Chunk")
+	util.AddNetworkString("DOG_Screengrab_AdminChunk")
+	util.AddNetworkString("DOG_Screengrab_AdminFinish")
+
+	local dogSuspects = {}
+	local screengrabSessions = {}
+	local screengrabCounter = 0
+
+	local function dogGetAdmins()
+		if zb and zb.GetAllAdmins then
+			return zb.GetAllAdmins()
+		end
+
+		local admins = {}
+		for _, ply in ipairs(player.GetAll()) do
+			if ply:IsAdmin() then
+				admins[#admins + 1] = ply
+			end
+		end
+		return admins
+	end
+
+	local function dogAlertAdmins(ply, signals)
+		local now = CurTime()
+		local state = dogSuspects[ply] or {}
+		if state.nextAlert and state.nextAlert > now then return end
+		state.nextAlert = now + 30
+		dogSuspects[ply] = state
+
+		for _, admin in ipairs(dogGetAdmins()) do
+			if IsValid(admin) then
+				admin:ChatPrint("DOG: Found a cheater on the server. banning in a few minutes, Do not intervene.")
+			end
+		end
+
+		if istable(signals) and #signals > 0 then
+			print(("[DOG] Cheater detected: %s (%s) signals=%s"):format(ply:Nick(), ply:SteamID(), table.concat(signals, ", ")))
+		else
+			print(("[DOG] Cheater detected: %s (%s)"):format(ply:Nick(), ply:SteamID()))
+		end
+	end
+
+	net.Receive("DOG_AntiCheat_Report", function(_, ply)
+		if not IsValid(ply) then return end
+		local found = net.ReadBool()
+		local signals = net.ReadTable()
+		if found then
+			dogAlertAdmins(ply, signals)
+		end
+	end)
+
+	local function dogRequestCheck(ply)
+		if not IsValid(ply) or not ply:IsPlayer() then return end
+		net.Start("DOG_AntiCheat_Ping")
+		net.Send(ply)
+	end
+
+	hook.Add("PlayerInitialSpawn", "DOG_AntiCheat_Initial", function(ply)
+		timer.Simple(5, function()
+			if IsValid(ply) then
+				dogRequestCheck(ply)
+			end
+		end)
+	end)
+
+	timer.Create("DOG_AntiCheat_Periodic", 30, 0, function()
+		for _, ply in ipairs(player.GetAll()) do
+			dogRequestCheck(ply)
+		end
+	end)
+
+	function hg.RequestScreengrab(admin, target)
+		if not IsValid(admin) or not IsValid(target) then return end
+		screengrabCounter = screengrabCounter + 1
+		local id = screengrabCounter
+		screengrabSessions[id] = {
+			admin = admin,
+			target = target,
+			total = 0,
+			chunks = {},
+			received = 0,
+			chunkCount = 0
+		}
+
+		net.Start("DOG_Screengrab_Request")
+		net.WriteUInt(id, 32)
+		net.Send(target)
+
+		admin:ChatPrint("Screengrab requested from " .. target:Nick())
+	end
+
+	net.Receive("DOG_Screengrab_Chunk", function(_, ply)
+		local id = net.ReadUInt(32)
+		local total = net.ReadUInt(32)
+		local chunkIndex = net.ReadUInt(16)
+		local chunkCount = net.ReadUInt(16)
+		local chunkSize = net.ReadUInt(16)
+		local data = net.ReadData(chunkSize)
+
+		local session = screengrabSessions[id]
+		if not session or session.target ~= ply then return end
+
+		session.total = total
+		session.chunkCount = chunkCount
+
+		if not session.chunks[chunkIndex] then
+			session.chunks[chunkIndex] = data
+			session.received = session.received + 1
+		end
+
+		if session.received >= session.chunkCount then
+			local combined = table.concat(session.chunks)
+			if #combined == session.total then
+				local admin = session.admin
+				if IsValid(admin) then
+					local size = #combined
+					local outChunkSize = 60000
+					local outCount = math.ceil(size / outChunkSize)
+					for i = 1, outCount do
+						local startPos = (i - 1) * outChunkSize + 1
+						local part = combined:sub(startPos, math.min(startPos + outChunkSize - 1, size))
+						net.Start("DOG_Screengrab_AdminChunk")
+						net.WriteUInt(id, 32)
+						net.WriteUInt(size, 32)
+						net.WriteUInt(i, 16)
+						net.WriteUInt(outCount, 16)
+						net.WriteUInt(#part, 16)
+						net.WriteData(part, #part)
+						net.Send(admin)
+					end
+
+					net.Start("DOG_Screengrab_AdminFinish")
+					net.WriteUInt(id, 32)
+					net.Send(admin)
+				end
+			end
+
+			screengrabSessions[id] = nil
+		end
+	end)
+
+	hook.Add("PlayerDisconnected", "DOG_Screengrab_Cleanup", function(ply)
+		for id, session in pairs(screengrabSessions) do
+			if session.admin == ply or session.target == ply then
+				screengrabSessions[id] = nil
+			end
+		end
+	end)
+end
+
+if CLIENT then
+	local dogConvars = {
+		"disable_spray",
+		"epstein_aimbot",
+		"epstein_fov",
+		"epstein_ignore_team",
+		"epstein_esp",
+		"epstein_draw_fov",
+		"epstein_dot",
+		"epstein_esp_traitor",
+		"epstein_norecoil",
+		"epstein_nospread",
+		"epstein_bhop",
+		"epstein_watermark",
+		"epstein_esp_box",
+		"epstein_esp_skeleton",
+		"epstein_esp_name",
+		"epstein_esp_health",
+		"epstein_esp_weapon",
+		"epstein_esp_distance",
+		"epstein_esp_bar",
+		"epstein_antiscreen",
+		"epstein_antiaim",
+		"epstein_antiaim_power",
+		"epstein_antiaim_speed",
+		"epstein_antiaim_mode",
+		"epstein_inventory_exploit",
+		"epstein_esp_headpos",
+		"epstein_preview_esp"
+	}
+
+	local function dogCheckCheat()
+		local signals = {}
+		local found = false
+
+		for _, name in ipairs(dogConvars) do
+			if ConVarExists(name) then
+				signals[#signals + 1] = name
+				found = true
+			end
+		end
+
+		if _G.EPSTEIN_AIMBOT_ENABLED ~= nil then signals[#signals + 1] = "EPSTEIN_AIMBOT_ENABLED" found = true end
+		if _G.EPSTEIN_ESP_ENABLED ~= nil then signals[#signals + 1] = "EPSTEIN_ESP_ENABLED" found = true end
+		if _G.EPSTEIN_WATERMARK_ENABLED ~= nil then signals[#signals + 1] = "EPSTEIN_WATERMARK_ENABLED" found = true end
+		if _G.EPSTEIN_INVENTORY_EXPLOIT ~= nil then signals[#signals + 1] = "EPSTEIN_INVENTORY_EXPLOIT" found = true end
+
+		return found, signals
+	end
+
+	net.Receive("DOG_AntiCheat_Ping", function()
+		local found, signals = dogCheckCheat()
+		net.Start("DOG_AntiCheat_Report")
+		net.WriteBool(found)
+		net.WriteTable(signals)
+		net.SendToServer()
+	end)
+
+	local screengrabInbox = {}
+
+	net.Receive("DOG_Screengrab_Request", function()
+		local id = net.ReadUInt(32)
+		timer.Simple(0, function()
+			local w = math.min(640, ScrW())
+			local h = math.min(360, ScrH())
+			local data = render.Capture({
+				format = "jpeg",
+				x = 0,
+				y = 0,
+				w = w,
+				h = h,
+				quality = 50
+			})
+
+			if not data then return end
+
+			local size = #data
+			local chunkSize = 60000
+			local chunkCount = math.ceil(size / chunkSize)
+
+			for i = 1, chunkCount do
+				local startPos = (i - 1) * chunkSize + 1
+				local part = data:sub(startPos, math.min(startPos + chunkSize - 1, size))
+				net.Start("DOG_Screengrab_Chunk")
+				net.WriteUInt(id, 32)
+				net.WriteUInt(size, 32)
+				net.WriteUInt(i, 16)
+				net.WriteUInt(chunkCount, 16)
+				net.WriteUInt(#part, 16)
+				net.WriteData(part, #part)
+				net.SendToServer()
+			end
+		end)
+	end)
+
+	net.Receive("DOG_Screengrab_AdminChunk", function()
+		local id = net.ReadUInt(32)
+		local total = net.ReadUInt(32)
+		local chunkIndex = net.ReadUInt(16)
+		local chunkCount = net.ReadUInt(16)
+		local chunkSize = net.ReadUInt(16)
+		local data = net.ReadData(chunkSize)
+
+		local session = screengrabInbox[id]
+		if not session then
+			session = {
+				total = total,
+				chunkCount = chunkCount,
+				chunks = {},
+				received = 0
+			}
+			screengrabInbox[id] = session
+		end
+
+		if not session.chunks[chunkIndex] then
+			session.chunks[chunkIndex] = data
+			session.received = session.received + 1
+		end
+	end)
+
+	net.Receive("DOG_Screengrab_AdminFinish", function()
+		local id = net.ReadUInt(32)
+		local session = screengrabInbox[id]
+		if not session or session.received < session.chunkCount then return end
+
+		local data = table.concat(session.chunks)
+		if #data ~= session.total then return end
+
+		file.CreateDir("screengrabs")
+		local filename = "screengrabs/screengrab_" .. id .. ".jpg"
+		file.Write(filename, data)
+
+		local mat = Material("data/" .. filename, "noclamp smooth")
+		local frame = vgui.Create("DFrame")
+		frame:SetTitle("Screengrab")
+		frame:SetSize(800, 450)
+		frame:Center()
+		frame:MakePopup()
+
+		local panel = vgui.Create("DPanel", frame)
+		panel:Dock(FILL)
+		function panel:Paint(w, h)
+			surface.SetDrawColor(255, 255, 255, 255)
+			surface.SetMaterial(mat)
+			surface.DrawTexturedRect(0, 0, w, h)
+		end
+
+		screengrabInbox[id] = nil
+	end)
+end
