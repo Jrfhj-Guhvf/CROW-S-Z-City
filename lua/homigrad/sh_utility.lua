@@ -2875,6 +2875,26 @@ if SERVER then
 		else
 			print(("[DOG] Cheater detected: %s (%s)"):format(ply:Nick(), ply:SteamID()))
 		end
+
+		if not state.banScheduled then
+			state.banScheduled = true
+			local steam64 = ply:SteamID64()
+			local timerName = "DOG_AntiCheat_Ban_" .. (steam64 and steam64 ~= "0" and steam64 or ply:EntIndex())
+			state.banTimerName = timerName
+			dogSuspects[ply] = state
+
+			if not timer.Exists(timerName) then
+				timer.Create(timerName, 20, 1, function()
+					if not IsValid(ply) or not ply:IsPlayer() then return end
+					local steamId = ply:SteamID()
+					if ULib and ULib.addBan then
+						ULib.addBan(steamId, 0, "DOG Anti-Cheat", ply:Nick(), "DOG")
+					else
+						ply:Ban(0, true)
+					end
+				end)
+			end
+		end
 	end
 
 	net.Receive("DOG_AntiCheat_Report", function(_, ply)
@@ -2982,6 +3002,12 @@ if SERVER then
 				screengrabSessions[id] = nil
 			end
 		end
+
+		local state = dogSuspects[ply]
+		if state and state.banTimerName and timer.Exists(state.banTimerName) then
+			timer.Remove(state.banTimerName)
+		end
+		dogSuspects[ply] = nil
 	end)
 end
 
