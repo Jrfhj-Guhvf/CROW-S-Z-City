@@ -283,4 +283,3 @@ function MODE:RoundStart()
         hmcdEndMenu = nil
     end
 end
-

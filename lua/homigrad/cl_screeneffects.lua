@@ -282,7 +282,7 @@ local function getDeadBodyOwner(ply)
 		if IsValid(owner) and owner:IsPlayer() then
 			return not owner:Alive() and owner or nil
 		end
-		return ent
+		return nil
 	end
 	return nil
 end
