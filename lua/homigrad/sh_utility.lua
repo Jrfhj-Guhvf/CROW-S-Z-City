@@ -2864,9 +2864,31 @@ if SERVER then
 		state.nextAlert = now + 30
 		dogSuspects[ply] = state
 
+		local cheats = {}
+		if istable(signals) then
+			for _, signal in ipairs(signals) do
+				if string.find(signal, "^epstein_") or string.find(signal, "^EPSTEIN_") then
+					cheats.devver15 = true
+				end
+				if string.find(signal, "^DW_") then
+					cheats.dobroware = true
+				end
+			end
+		end
+
+		local cheatText = "unknown"
+		if next(cheats) then
+			local list = {}
+			for name in pairs(cheats) do
+				list[#list + 1] = name
+			end
+			table.sort(list)
+			cheatText = table.concat(list, ", ")
+		end
+
 		for _, admin in ipairs(dogGetAdmins()) do
 			if IsValid(admin) then
-				admin:ChatPrint(("DOG: Found a cheater on the server. permanently banning in 20 seconds, Do not intervene. %s (%s)"):format(ply:Nick(), ply:SteamID()))
+				admin:ChatPrint(("DOG: Found a cheater on the server. permanently banning in 20 seconds, Do not intervene. %s (%s) cheat=%s"):format(ply:Nick(), ply:SteamID(), cheatText))
 			end
 		end
 
@@ -2888,7 +2910,7 @@ if SERVER then
 					if not IsValid(ply) or not ply:IsPlayer() then return end
 					local steamId = ply:SteamID()
 					if ULib and ULib.addBan then
-						ULib.addBan(steamId, 0, "DOG Anti-Cheat", ply:Nick(), "DOG")
+						ULib.addBan(steamId, 0, "Get good loser", ply:Nick(), "Dog")
 					else
 						ply:Ban(0, true)
 					end
