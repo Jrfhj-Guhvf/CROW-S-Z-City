@@ -2866,7 +2866,7 @@ if SERVER then
 
 		for _, admin in ipairs(dogGetAdmins()) do
 			if IsValid(admin) then
-				admin:ChatPrint("DOG: Found a cheater on the server. banning in a few minutes, Do not intervene.")
+				admin:ChatPrint(("DOG: Found a cheater on the server. banning in 20 seconds, Do not intervene. %s (%s)"):format(ply:Nick(), ply:SteamID()))
 			end
 		end
 
