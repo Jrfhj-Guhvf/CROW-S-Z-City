@@ -66,6 +66,7 @@ local random_phrase = {
 	"Breathing feels oddly satisfying right now.",
 	"What if this quiet lasts forever?",
 	"Why isn't anything happening?",
+	"I feel, oddly happy for some reason.",
 }
 
 local fear_hurt_ironic = {
@@ -137,6 +138,7 @@ local schizo_monologue = {
 local is_aimed_at_phrases = {
     "Oh God. This is it.",
     "Don't. move.",
+	"I can see their finger hesitating to pull the trigger. Fuck.",
     "Is this really how I die?",
     "I should've run. Why didn't I run?",
     "Please don't pull the trigger. Please.",
