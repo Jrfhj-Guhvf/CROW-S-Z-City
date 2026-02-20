@@ -139,7 +139,9 @@ contextPhrases = {
             "tomholland.wav",
             "momishomeless.wav",
             "MEinMYROOM.wav",
-            "ninja.wav"
+            "ninja.wav",
+            "BINGUS.wav",
+            "jeffy.wav"
             },
 		["Someone died"] = {
 			"vo/episode_1/npc/male01/cit_buddykilled01.wav",
