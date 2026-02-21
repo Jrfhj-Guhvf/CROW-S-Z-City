@@ -1604,7 +1604,7 @@ function SWEP:AttackFront(special_attack, rand)
 		end
 
 		if owner.organism.superfighter then
-			Mul = Mul * 5 * self.Penetration
+		Mul = Mul * 1 * self.Penetration
 			if Ent.organism then
 				Ent.organism.immobilization = 10
 			end
