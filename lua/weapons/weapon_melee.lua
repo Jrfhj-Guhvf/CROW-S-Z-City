@@ -1,4 +1,4 @@
-﻿if SERVER then AddCSLuaFile() end
+if SERVER then AddCSLuaFile() end
 SWEP.PrintName = "Combat Knife"
 SWEP.Instructions = "A military grade combat knife designed to neutralize the enemy during combat operations and special operations."
 SWEP.Category = "Weapons - Melee"
@@ -756,7 +756,7 @@ function SWEP:MultiplyDMG(owner, ent, vellen, mul)
     mul = mul * (owner.MeleeDamageMul or 1)
 
     if owner.organism.superfighter then
-        mul = mul * 5
+		mul = mul * 1
     end
 
     if owner:IsBerserk() then
