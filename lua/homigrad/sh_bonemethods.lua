@@ -73,7 +73,6 @@ local function aprilFoolsEnabled()
 	local cvar = GetConVar("hg_aprilfools")
 	return cvar and cvar:GetBool()
 end
-
 local function reset(ply)
 	ply.manipulated = ply.manipulated or {}
 	ply.unmanipulated = {}
@@ -506,12 +505,124 @@ hook.Add("Bones", "homigrad-walk-torso", function(ply, dtime)
 end)
 
 if CLIENT then
-	local sprintSoundPath = "cartoony ass run.wav"
-	util.PrecacheSound(sprintSoundPath)
-	local sprintSoundDuration = SoundDuration(sprintSoundPath)
-	if not sprintSoundDuration or sprintSoundDuration <= 0 then
-		sprintSoundDuration = 1
+	local ghostTrail = {}
+	local ghostInterval = 0.05
+	local ghostLife = 0.25
+	local nextGhostTime = 0
+	local ghostColors = {Color(0, 255, 0), Color(255, 0, 0)}
+	local ghostColorIndex = 1
+	local ghostBackOffset = 24
+
+	local function clearGhosts()
+		for i = #ghostTrail, 1, -1 do
+			local g = ghostTrail[i]
+			if IsValid(g.modelEnt) then
+				g.modelEnt:Remove()
+			end
+			table.remove(ghostTrail, i)
+		end
 	end
+
+	local function captureBones(ply)
+		local mats = {}
+		for i = 0, ply:GetBoneCount() do
+			local m = ply:GetBoneMatrix(i)
+			if m then
+				mats[i] = Matrix(m)
+			end
+		end
+		return mats
+	end
+
+	local function spawnGhost(ply, color)
+		local model = ply:GetModel()
+		if not model or model == "" then return end
+		local backPos = ply:GetPos() - ply:GetForward() * ghostBackOffset
+		table.insert(ghostTrail, {
+			model = model,
+			pos = backPos,
+			ang = ply:GetAngles(),
+			bones = captureBones(ply),
+			color = color,
+			born = CurTime(),
+			life = ghostLife
+		})
+	end
+
+	hook.Add("Think", "homigrad-aprilfools-ghosttrail", function()
+		if not aprilFoolsEnabled() then
+			clearGhosts()
+			return
+		end
+		local now = CurTime()
+		if now < nextGhostTime then return end
+		for _, ply in ipairs(player.GetAll()) do
+			if not IsValid(ply) then continue end
+			local speed = ply:GetVelocity():Length2D()
+			local isSprinting = ply:Alive()
+				and not ply:InVehicle()
+				and ((ply.IsSprinting and ply:IsSprinting()) or ply:KeyDown(IN_SPEED))
+				and speed > 300
+			if isSprinting then
+				spawnGhost(ply, ghostColors[ghostColorIndex])
+				ghostColorIndex = ghostColorIndex % #ghostColors + 1
+			end
+		end
+		nextGhostTime = now + ghostInterval
+	end)
+
+	hook.Add("PostDrawTranslucentRenderables", "homigrad-aprilfools-ghosttrail", function()
+		if #ghostTrail == 0 then return end
+		local now = CurTime()
+		for i = #ghostTrail, 1, -1 do
+			local g = ghostTrail[i]
+			local age = now - g.born
+			if age >= g.life then
+				if IsValid(g.modelEnt) then
+					g.modelEnt:Remove()
+				end
+				table.remove(ghostTrail, i)
+			else
+				if not IsValid(g.modelEnt) or g.modelEnt:GetModel() ~= g.model then
+					if IsValid(g.modelEnt) then
+						g.modelEnt:Remove()
+					end
+					g.modelEnt = ClientsideModel(g.model, RENDERGROUP_TRANSLUCENT)
+					g.modelEnt:SetNoDraw(true)
+					g.modelEnt:SetRenderMode(RENDERMODE_TRANSCOLOR)
+					g.modelEnt:SetMaterial("models/debug/debugwhite")
+				end
+				render.SetColorModulation(g.color.r / 255, g.color.g / 255, g.color.b / 255)
+				local alpha = math.Clamp(1 - age / g.life, 0, 1)
+				g.modelEnt:SetPos(g.pos)
+				g.modelEnt:SetAngles(g.ang)
+				g.modelEnt:SetupBones()
+				for boneId, mat in pairs(g.bones) do
+					g.modelEnt:SetBoneMatrix(boneId, mat)
+				end
+				g.modelEnt:SetColor(Color(255, 255, 255, math.floor(alpha * 200)))
+				g.modelEnt:DrawModel()
+				render.SetColorModulation(1, 1, 1)
+			end
+		end
+	end)
+
+	local sprintSounds = {
+		{path = "mach1.wav"},
+		{path = "mach2.wav"},
+		{path = "mach3.wav"},
+		{path = "mach4.wav"},
+	}
+	for _, snd in ipairs(sprintSounds) do
+		util.PrecacheSound(snd.path)
+		local duration = SoundDuration(snd.path)
+		if not duration or duration <= 0 then
+			duration = 1
+		end
+		snd.duration = duration
+	end
+	local currentSprintSound
+	local currentSprintDuration = 1
 	local sprintLoopNext = 0
 	local nextSprintCheck = 0
 
@@ -519,10 +630,11 @@ if CLIENT then
 		local ply = LocalPlayer()
 		if not IsValid(ply) then return end
 		if not aprilFoolsEnabled() then
-			if sprintLoopNext ~= 0 then
-				ply:StopSound(sprintSoundPath)
-				sprintLoopNext = 0
+			if currentSprintSound then
+				ply:StopSound(currentSprintSound)
+				currentSprintSound = nil
 			end
+			sprintLoopNext = 0
 			return
 		end
 		local now = CurTime()
@@ -536,12 +648,31 @@ if CLIENT then
 			and speed > 40
 
 		if isSprinting then
-			if now >= sprintLoopNext then
-				ply:EmitSound(sprintSoundPath, 90, 100, 1, CHAN_BODY)
-				sprintLoopNext = now + sprintSoundDuration
+			local tier
+			if speed < 300 then
+				tier = sprintSounds[1]
+			elseif speed < 600 then
+				tier = sprintSounds[2]
+			elseif speed < 900 then
+				tier = sprintSounds[3]
+			else
+				tier = sprintSounds[4]
 			end
-		elseif sprintLoopNext ~= 0 then
-			ply:StopSound(sprintSoundPath)
+			if currentSprintSound ~= tier.path then
+				if currentSprintSound then
+					ply:StopSound(currentSprintSound)
+				end
+				currentSprintSound = tier.path
+				currentSprintDuration = tier.duration or 1
+				sprintLoopNext = 0
+			end
+			if now >= sprintLoopNext then
+				ply:EmitSound(currentSprintSound, 140, 100, 1, CHAN_BODY)
+				sprintLoopNext = now + currentSprintDuration
+			end
+		elseif currentSprintSound then
+			ply:StopSound(currentSprintSound)
+			currentSprintSound = nil
 			sprintLoopNext = 0
 		end
 	end)
