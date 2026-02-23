@@ -57,7 +57,19 @@ local layer, name, boneName, boneID
 if SERVER and not ConVarExists("hg_aprilfools") then
 	CreateConVar("hg_aprilfools", 0, bit.bor(FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE), "enable april fools bone animation", 0, 1)
 end
+if SERVER then
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		SetGlobalBool("hg_aprilfools", cvar:GetBool())
+		cvars.AddChangeCallback("hg_aprilfools", function(_, _, newValue)
+			SetGlobalBool("hg_aprilfools", tonumber(newValue) == 1)
+		end, "hg_aprilfools_sync")
+	end
+end
 local function aprilFoolsEnabled()
+	if CLIENT then
+		return GetGlobalBool("hg_aprilfools", false)
+	end
 	local cvar = GetConVar("hg_aprilfools")
 	return cvar and cvar:GetBool()
 end
