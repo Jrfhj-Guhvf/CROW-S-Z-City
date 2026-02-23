@@ -3,6 +3,13 @@ local min, max, Round = math.min, math.max, math.Round
 --local Organism = hg.organism
 hg.organism.module.stamina = {}
 local module = hg.organism.module.stamina
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		return cvar:GetBool()
+	end
+	return GetGlobalBool("hg_aprilfools", false)
+end
 module[1] = function(org)
 	org.adrenaline = 0
 	org.adrenalineAdd = 0
@@ -28,6 +35,12 @@ end
 
 module[2] = function(owner, org, timeValue)
 	local stamina = org.stamina
+	if aprilFoolsEnabled() then
+		stamina.sub = 0
+		stamina.subadd = 0
+		stamina[1] = stamina.max or stamina.range or stamina[1]
+		return
+	end
 	
 	local painfrommoving = (stamina.sub * (org.chest))//(stamina.sub * ((org.jaw == 1 and 1 or 0) + org.chest + (org.jawdislocation and 1 or 0)))
 	//org.painadd = org.painadd + painfrommoving * timeValue * 5
@@ -120,6 +133,13 @@ hook.Add("FinishMove", "!homigrad-organism", function(ply, move)
 	local vel = move:GetFinalJumpVelocity()
 
 	if !ply.organism then return end
+	if aprilFoolsEnabled() then
+		local maxSpeed = 1200
+		move:SetMaxSpeed(maxSpeed)
+		move:SetMaxClientSpeed(maxSpeed)
+		ply:SetRunSpeed(maxSpeed)
+		ply:SetWalkSpeed(100)
+	end
 
 	if vel ~= vecZero then ply.organism.stamina[1] = max(ply.organism.stamina[1] - ply:GetJumpPower() / 10,0) end
 	ply.organism.moveMaxSpeed = move:GetMaxSpeed()
