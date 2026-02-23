@@ -54,6 +54,13 @@ local matrix, matrixSet
 
 local vecZero, angZero, vecFull = Vector(0, 0, 0), Angle(0, 0, 0), Vector(1, 1, 1)
 local layer, name, boneName, boneID
+if SERVER and not ConVarExists("hg_aprilfools") then
+	CreateConVar("hg_aprilfools", 0, bit.bor(FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE), "enable april fools bone animation", 0, 1)
+end
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	return cvar and cvar:GetBool()
+end
 
 local function reset(ply)
 	ply.manipulated = ply.manipulated or {}
@@ -373,6 +380,93 @@ end)
 
 hook.Add("Bones", "homigrad-walk-torso", function(ply, dtime)
 	if not IsValid(ply) or not ply:IsPlayer() or not ply:Alive() then return end
+	if aprilFoolsEnabled() then
+		if not ply:OnGround() then
+			local vz = math.abs(ply:GetVelocity().z)
+			local airScale = math.Clamp(vz / 300, 0.2, 1.2)
+			local t = CurTime()
+			local pitch = math.sin(t * 6.5) * 35 * airScale
+			local yaw = math.cos(t * 5.5) * 45 * airScale
+			local roll = math.sin(t * 8.5) * 25 * airScale
+
+			local torsoAng = Angle(pitch, yaw, roll)
+			local legKick = math.sin(t * 7.5 + 1.2) * 55 * airScale
+			local calfKick = -legKick * 0.7
+			local footKick = legKick * 0.5
+
+			hg.bone.Set(ply, "spine", vector_origin, torsoAng, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "spine1", vector_origin, torsoAng, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "spine2", vector_origin, torsoAng, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "pelvis", vector_origin, Angle(-pitch * 0.8, -yaw * 0.8, roll * 0.6), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "head", vector_origin, Angle(pitch * 0.6, yaw * 0.6, roll * -0.4), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "l_upperarm", vector_origin, Angle(-pitch * 0.7, -yaw * 1.1, roll * 1.2), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "r_upperarm", vector_origin, Angle(-pitch * 0.7, yaw * 1.1, -roll * 1.2), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "l_forearm", vector_origin, Angle(pitch * 0.8, yaw * 0.4, roll * 0.6), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "r_forearm", vector_origin, Angle(pitch * 0.8, -yaw * 0.4, -roll * 0.6), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_L_Thigh", vector_origin, Angle(legKick, -yaw * 0.3, 0), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_R_Thigh", vector_origin, Angle(-legKick, yaw * 0.3, 0), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_L_Calf", vector_origin, Angle(calfKick, 0, 0), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_R_Calf", vector_origin, Angle(-calfKick, 0, 0), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_L_Foot", vector_origin, Angle(footKick, 0, 0), "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_R_Foot", vector_origin, Angle(-footKick, 0, 0), "walk", 0.08, dtime)
+			return
+		end
+
+		local speed = ply:GetVelocity():Length2D()
+		local scale = math.Clamp(speed / 200, 0, 1)
+		local runBoost = speed >= 220 and 1.4 or 1
+		scale = math.min(scale * runBoost, 1.5)
+		if scale <= 0.05 then
+			hg.bone.Set(ply, "spine", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "spine1", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "spine2", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "pelvis", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "l_upperarm", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "r_upperarm", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_L_Thigh", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_R_Thigh", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_L_Calf", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_R_Calf", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_L_Foot", vector_origin, angle_zero, "walk", 0.08, dtime)
+			hg.bone.Set(ply, "ValveBiped.Bip01_R_Foot", vector_origin, angle_zero, "walk", 0.08, dtime)
+			return
+		end
+
+		local t = CurTime()
+		local pitch = math.sin(t * 6) * 30 * scale
+		local yaw = math.cos(t * 5) * 40 * scale
+		local roll = math.sin(t * 8) * 18 * scale
+		local torsoAng = Angle(pitch, yaw, roll)
+
+		local armPitch = pitch * 0.6
+		local armYaw = yaw * 0.8
+		local armRoll = roll * 1.2
+
+		local legPitch = math.sin(t * 7 + 1.5) * 55 * scale
+		local legYaw = math.cos(t * 6 + 0.7) * 16 * scale
+		local calfPitch = -legPitch * 0.6
+		local footPitch = legPitch * 0.3
+
+		hg.bone.Set(ply, "spine", vector_origin, torsoAng, "walk", 0.08, dtime)
+		hg.bone.Set(ply, "spine1", vector_origin, torsoAng, "walk", 0.08, dtime)
+		hg.bone.Set(ply, "spine2", vector_origin, torsoAng, "walk", 0.08, dtime)
+		hg.bone.Set(ply, "pelvis", vector_origin, Angle(-pitch * 0.8, -yaw * 0.8, roll * 0.6), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "head", vector_origin, Angle(pitch * 0.5, yaw * 0.5, roll * -0.3), "walk", 0.08, dtime)
+
+		hg.bone.Set(ply, "l_upperarm", vector_origin, Angle(-armPitch * 1.2, -armYaw * 1.2, armRoll * 1.3), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "r_upperarm", vector_origin, Angle(-armPitch * 1.2, armYaw * 1.2, -armRoll * 1.3), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "l_forearm", vector_origin, Angle(armPitch * 0.9, armYaw * 0.4, armRoll * 0.6), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "r_forearm", vector_origin, Angle(armPitch * 0.9, -armYaw * 0.4, -armRoll * 0.6), "walk", 0.08, dtime)
+
+		hg.bone.Set(ply, "ValveBiped.Bip01_L_Thigh", vector_origin, Angle(legPitch, -legYaw, 0), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_R_Thigh", vector_origin, Angle(-legPitch, legYaw, 0), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_L_Calf", vector_origin, Angle(calfPitch, legYaw * 0.4, 0), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_R_Calf", vector_origin, Angle(-calfPitch, -legYaw * 0.4, 0), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_L_Foot", vector_origin, Angle(footPitch, 0, 0), "walk", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_R_Foot", vector_origin, Angle(-footPitch, 0, 0), "walk", 0.08, dtime)
+		return
+	end
+
 	if not ply:OnGround() then
 		hg.bone.Set(ply, "spine", vector_origin, angle_zero, "walk", 0.08, dtime)
 		hg.bone.Set(ply, "spine1", vector_origin, angle_zero, "walk", 0.08, dtime)
@@ -398,6 +492,48 @@ hook.Add("Bones", "homigrad-walk-torso", function(ply, dtime)
 	hg.bone.Set(ply, "spine1", vector_origin, ang, "walk", 0.08, dtime)
 	hg.bone.Set(ply, "spine2", vector_origin, ang, "walk", 0.08, dtime)
 end)
+
+if CLIENT then
+	local sprintSoundPath = "cartoony ass run.wav"
+	util.PrecacheSound(sprintSoundPath)
+	local sprintSoundDuration = SoundDuration(sprintSoundPath)
+	if not sprintSoundDuration or sprintSoundDuration <= 0 then
+		sprintSoundDuration = 1
+	end
+	local sprintLoopNext = 0
+	local nextSprintCheck = 0
+
+	hook.Add("Think", "homigrad-sprint-sound", function()
+		local ply = LocalPlayer()
+		if not IsValid(ply) then return end
+		if not aprilFoolsEnabled() then
+			if sprintLoopNext ~= 0 then
+				ply:StopSound(sprintSoundPath)
+				sprintLoopNext = 0
+			end
+			return
+		end
+		local now = CurTime()
+		if now < nextSprintCheck then return end
+		nextSprintCheck = now + 0.05
+
+		local speed = ply:GetVelocity():Length2D()
+		local isSprinting = ply:Alive()
+			and not ply:InVehicle()
+			and ((ply.IsSprinting and ply:IsSprinting()) or ply:KeyDown(IN_SPEED))
+			and speed > 40
+
+		if isSprinting then
+			if now >= sprintLoopNext then
+				ply:EmitSound(sprintSoundPath, 90, 100, 1, CHAN_BODY)
+				sprintLoopNext = now + sprintSoundDuration
+			end
+		elseif sprintLoopNext ~= 0 then
+			ply:StopSound(sprintSoundPath)
+			sprintLoopNext = 0
+		end
+	end)
+end
 
 function hg.bone.Set(ply, lookup_name, vec, ang, layer, lerp, dtime2)
 	local dtime = dtime2 or dtime
