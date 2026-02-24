@@ -63,6 +63,14 @@ if SERVER then
 		SetGlobalBool("hg_aprilfools", cvar:GetBool())
 		cvars.AddChangeCallback("hg_aprilfools", function(_, _, newValue)
 			SetGlobalBool("hg_aprilfools", tonumber(newValue) == 1)
+			if tonumber(newValue) == 1 then
+				local now = CurTime()
+				for _, ply in ipairs(player.GetAll()) do
+					if not IsValid(ply) then continue end
+					ply.HG_AF_DanceCooldown = now + 50
+					ply.HG_AF_NextDanceCheck = now + math.Rand(10, 20)
+				end
+			end
 		end, "hg_aprilfools_sync")
 	end
 end
