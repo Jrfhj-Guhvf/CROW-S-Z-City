@@ -1527,6 +1527,16 @@ local IsValid = IsValid
 			return
 		end
 
+	
+	if ply:GetNWFloat("hg_dance_until", 0) > CurTime() then
+		cmd:SetForwardMove(0)
+		cmd:SetSideMove(0)
+		cmd:RemoveKey(IN_JUMP)
+		cmd:RemoveKey(IN_DUCK)
+		mv:SetForwardSpeed(0)
+		mv:SetSideSpeed(0)
+	end
+
 		if !hg.RagdollCombatInUse(ply) and (IsValid(ply.FakeRagdoll) or IsValid(ply:GetNWEntity("FakeRagdollOld"))) then
 			if IsValid(ply.FakeRagdoll) then
 				cmd:SetForwardMove(0)
