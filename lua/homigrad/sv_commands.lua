@@ -206,34 +206,13 @@ if SERVER then
 
     end, 2, "ник игрока сообщение"}
 
-    concommand.Add("screengrab", function(ply, _, args)
-        if not IsValid(ply) then
-            print("Screengrab must be run by an admin player.")
-            return
+    concommand.Add("hg_dance", function(ply)
+        if not IsValid(ply) then return end
+        local duration = SoundDuration("bbq.wav")
+        if not duration or duration <= 0 then
+            duration = 3
         end
-
-        if not ply:IsAdmin() then return end
-
-        if #args < 1 then
-            ply:ChatPrint("Usage: screengrab <player>")
-            return
-        end
-
-        if not hg or not hg.RequestScreengrab then
-            ply:ChatPrint("Screengrab system is not available.")
-            return
-        end
-
-        local targets = player.GetListByName(args[1])
-        if not targets or #targets == 0 then
-            ply:ChatPrint("Player not found: " .. args[1])
-            return
-        end
-
-        for _, target in ipairs(targets) do
-            if IsValid(target) and target:IsPlayer() then
-                hg.RequestScreengrab(ply, target)
-            end
-        end
+        ply:SetNWFloat("hg_dance_until", CurTime() + duration)
+        ply:EmitSound("bbq.wav", 100, 100, 1, CHAN_AUTO)
     end)
 end
