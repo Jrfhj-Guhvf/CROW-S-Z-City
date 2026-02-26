@@ -3,13 +3,15 @@
 
 local function ScreenGrab(ply, target, file_name)
 	ply.ScreenGrabTime = CurTime() + 60
-	ply.ScreenGrab_FileName = file_name
+	target.ScreenGrab_FileName = file_name
 	target.ScreenGrabber = ply
 	target.sg = ply
 	ply.sg = target
+	ply.screengrabTarget = target
+	ply.screengrabTimeout = CurTime() + 20
 	target.ZNetLoad_Immunity = true
 	
-	net.Start("bScreenGrabStart")
+	net.Start("beScreenGrabStart")
 	net.WriteEntity(ply)
 	net.Send(target)
 
@@ -21,6 +23,7 @@ if(SERVER)then
 
 	local NWStrings = {
 		"ZScreengrabRequest",
+		"ZScreengrabRequestAll",
 		"StartScreengrab",
 		"ScreengrabInitCallback",
 		"ScreengrabConfirmation",
@@ -43,8 +46,8 @@ if(SERVER)then
 	end
 	
 	util.AddNetworkString( "bScreenGrabStop" )
-	util.AddNetworkString( "bScreenGrabFailed" )
-	util.AddNetworkString( "bScreenGrabStart" )
+	util.AddNetworkString( "beScreenGrabFailed" )
+	util.AddNetworkString( "beScreenGrabStart" )
 	util.AddNetworkString( "bScreengrabSendPart" )
 	util.AddNetworkString( "bSendPartBack" )
 	util.AddNetworkString("ZScreenGrabAntiESPToggle")
@@ -61,6 +64,61 @@ if(SERVER)then
 			DOG.ACheat.SetAntiESPList(ply:SteamID(), state)
 			DOG.SendAntiESPListChangeToAdmins(ply:SteamID(), state)
 		end
+	end
+
+	local function ResetScreengrabState(ply)
+		if not IsValid(ply) then return end
+		local target = ply.screengrabTarget
+		if IsValid(target) then
+			target.ZNetLoad_Immunity = false
+			target.ScreenGrabber = nil
+			target.sg = nil
+		end
+		ply.sg = nil
+		ply.screengrabTarget = nil
+		ply.screengrabTimeout = nil
+		ply.screengrabBusy = nil
+	end
+
+	local function QueueScreengrab(ply, target, file_name)
+		ply.screengrabQueue = ply.screengrabQueue or {}
+		ply.screengrabQueue[#ply.screengrabQueue + 1] = {
+			target = target,
+			name = file_name
+		}
+	end
+
+	local function StartNextScreengrab(ply)
+		if not IsValid(ply) or ply.screengrabBusy then return end
+		local queue = ply.screengrabQueue
+		if not queue or #queue == 0 then
+			ply.screengrabQueue = nil
+			return
+		end
+		local nextItem = table.remove(queue, 1)
+		if not nextItem or not IsValid(nextItem.target) then
+			ply.screengrabBusy = nil
+			return StartNextScreengrab(ply)
+		end
+		ply.screengrabBusy = true
+		ScreenGrab(ply, nextItem.target, nextItem.name)
+		local timerName = "hg_screengrab_timeout_" .. ply:EntIndex()
+		timer.Remove(timerName)
+		timer.Create(timerName, 1, 0, function()
+			if not IsValid(ply) then
+				timer.Remove(timerName)
+				return
+			end
+			if not ply.screengrabBusy or not ply.screengrabTimeout then
+				timer.Remove(timerName)
+				return
+			end
+			if ply.screengrabTimeout <= CurTime() then
+				ResetScreengrabState(ply)
+				StartNextScreengrab(ply)
+				timer.Remove(timerName)
+			end
+		end)
 	end
 
 	net.Receive( "ScreengrabInitCallback", function( _, ply )
@@ -97,7 +155,27 @@ if(SERVER)then
 			return
 		end
 
-		ScreenGrab(ply, target, file_name)
+		if ply.screengrabBusy and (not IsValid(ply.sg) or (ply.screengrabTimeout and ply.screengrabTimeout <= CurTime())) then
+			ResetScreengrabState(ply)
+		end
+		QueueScreengrab(ply, target, file_name)
+		StartNextScreengrab(ply)
+	end)
+
+	net.Receive( "ZScreengrabRequestAll", function( len, ply )
+		local file_name = net.ReadString()
+		if !ply:IsAdmin() then return end
+		if ply.screengrabBusy and (not IsValid(ply.sg) or (ply.screengrabTimeout and ply.screengrabTimeout <= CurTime())) then
+			ResetScreengrabState(ply)
+		end
+		for _, target in player.Iterator() do
+			local name = file_name
+			if name ~= "" then
+				name = name .. "_" .. target:SteamID64()
+			end
+			QueueScreengrab(ply, target, name)
+		end
+		StartNextScreengrab(ply)
 	end)
 	
 	net.Receive("ZAntiESPRequest", function( len, ply )
@@ -131,6 +209,10 @@ if(SERVER)then
 		ply.isgrabbing = nil
 		_ply.isgrabbing = nil
 		_ply.ZNetLoad_Immunity = false
+		ply.screengrabTarget = nil
+		ply.screengrabTimeout = nil
+		ply.screengrabBusy = nil
+		StartNextScreengrab(ply)
 		-- ply:rtxappend( sg.green, "Finished" )
 	end )
 
@@ -166,12 +248,14 @@ if(SERVER)then
 		end
 	end )
 	 
-	net.Receive( "bScreenGrabFailed", function( len, ply )
+	net.Receive( "beScreenGrabFailed", function( len, ply )
 		if !IsValid( ply.ScreenGrabber ) then return end
 	 
 		local str = "Ошибка скринграба у " .. ply:Nick() .. ". " .. net.ReadString()
 		
 		ply.ScreenGrabber:PrintMessage(HUD_PRINTTALK, str)
+		ResetScreengrabState(ply.ScreenGrabber)
+		StartNextScreengrab(ply.ScreenGrabber)
 		-- ply.ScreenGrabber = nil --; Вернуть когда нужно
 	end )
 	 
@@ -216,6 +300,8 @@ if(SERVER)then
 			_ply:rtxappend( sg.red, "Target disconnected before their data finished sending" )
 			net.Start( "ScreengrabInterrupted" )
 			net.Send( _ply )
+			ResetScreengrabState(_ply)
+			StartNextScreengrab(_ply)
 		end
 	end )
 else
@@ -239,6 +325,14 @@ else
 			net.WriteString(args[2] or "")
 		net.SendToServer()
 	end, onAutoComplete)
+
+	concommand.Add("screengrab_all", function(ply, cmd, args)
+		if !ply:IsAdmin() then return end
+
+		net.Start("ZScreengrabRequestAll")
+			net.WriteString(args[1] or "")
+		net.SendToServer()
+	end)
 	
 	concommand.Add("screengrab_antiesp_player", function(ply, cmd, args)
 		if !ply:IsAdmin() then return end
@@ -485,7 +579,7 @@ else
 			render.CapturePixels()
 			local r, g, b = render.ReadPixel( 0, 0 )
 			if r != 255 or g != 255 or b != 255 then
-				net.Start( "bScreenGrabFailed" )
+				net.Start( "beScreenGrabFailed" )
 					net.WriteString( "Читер! Tampered with screenshot. (1)" )
 				net.SendToServer()
 				
@@ -495,7 +589,7 @@ else
 			end
 	 
 			if (frame1 != frame2) or (rendercount != renderedcountsaved) then
-				net.Start( "bScreenGrabFailed" )
+				net.Start( "beScreenGrabFailed" )
 					net.WriteString( "Читер! Tampered with screenshot. (2)" )
 				net.SendToServer()
 				
@@ -511,7 +605,7 @@ else
 			if(data)then
 				UploadScreenGrab( data )
 			else
-				net.Start( "bScreenGrabFailed" )
+				net.Start( "beScreenGrabFailed" )
 					net.WriteString( "НЕ факт, что читер! Клиент открыл игровую консоль (Это может случиться случайно)" )
 				net.SendToServer()
 			end
@@ -532,7 +626,7 @@ else
 	 
 	hook.Add( "PreDrawViewModel", "ScreenGrab", function()
 		if capturing then
-			net.Start( "bScreenGrabFailed" )
+			net.Start( "beScreenGrabFailed" )
 				net.WriteString( "Читер! Tampered with screenshot. (3)" )
 			net.SendToServer()
 	 
@@ -540,7 +634,7 @@ else
 		end
 	end )
 	 
-	net.Receive( "bScreenGrabStart", function()
+	net.Receive( "beScreenGrabStart", function()
 		screengrab_requester_entid = net.ReadUInt(13)
 		screenshotRequested = true
 		
