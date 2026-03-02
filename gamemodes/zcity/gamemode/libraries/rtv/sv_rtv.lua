@@ -489,6 +489,11 @@ function zb.CheckRTVVotes(needPrint)
 end
 
 COMMANDS.rtv = {function(ply, args)
+    if zb.RTVAvailableAt and CurTime() < zb.RTVAvailableAt then
+        local remaining = math.ceil(zb.RTVAvailableAt - CurTime())
+        ply:ChatPrint("RTV will be available in " .. remaining .. " seconds.")
+        return
+    end
     --print(zb.votestarted)
 	if zb.votestarted then
 		zb.RTVMenu(ply)
@@ -549,6 +554,7 @@ end, 0}
 hook.Add("ShutDown", "ResetRTVVotesOnMapChange", zb.ClearRTVVotes)
 hook.Add("PostGamemodeLoaded", "InitializeRTVSystem", function()
     zb.ClearRTVVotes()
+    zb.RTVAvailableAt = CurTime() + 240
 end)
 
 hook.Add("PlayerDisconnected", "CheckRTVAfterDisconnect", function(ply)
