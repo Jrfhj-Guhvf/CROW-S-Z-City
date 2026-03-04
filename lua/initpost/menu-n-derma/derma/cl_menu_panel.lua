@@ -16,7 +16,7 @@ local Selects = {
         btn:SetFont( "ZCity_Small" )
         btn:SetTall( ScreenScale( 15 ) )
         btn:Dock(BOTTOM)
-        btn:DockMargin(0,ScreenScale(4),0,0)
+        btn:DockMargin(0,ScreenScale(2),0,0)
         btn:SetTextColor(Color(255,255,255))
         btn:InvalidateParent()
         btn.RColor = Color(225, 225, 225, 0)
@@ -34,7 +34,7 @@ local Selects = {
             self.HoverLerp2 = LerpFT(0.2, self.HoverLerp2 or 0, self:IsHovered() and 1 or 0)
                 
             self:SetTextColor(self.RColor:Lerp(self.WColor:Lerp(red_select, self.HoverLerp2), self.HoverLerp))
-            self:SetX(self.x + ScreenScaleH(55) + self.HoverLerp * ScreenScaleH(50))
+            self:SetX(self.x + ScreenScaleH(45) + self.HoverLerp * ScreenScaleH(50))
         end
 
         local btnStd = vgui.Create( "DLabel", btn )
@@ -44,7 +44,7 @@ local Selects = {
         btnStd:SetFont( "ZCity_Small" )
         btnStd:SetTall( ScreenScale( 15 ) )
         btnStd:Dock(BOTTOM)
-        btnStd:DockMargin(0,ScreenScale(4),0,0)
+        btnStd:DockMargin(0,ScreenScale(2),0,0)
         btnStd:SetTextColor(Color(255,255,255))
         btnStd:InvalidateParent()
         btnStd.RColor = Color(225, 225, 225, 0)
@@ -61,7 +61,7 @@ local Selects = {
             self.HoverLerp2 = LerpFT(0.2, self.HoverLerp2 or 0, self:IsHovered() and 1 or 0)
     
             self:SetTextColor(self.RColor:Lerp(self.WColor:Lerp(red_select, self.HoverLerp2), self.HoverLerp))
-            self:SetX(self.x + ScreenScaleH(50))
+            self:SetX(self.x + ScreenScaleH(40))
         end
 
         local btnCtr = vgui.Create( "DLabel", btnStd )
@@ -71,7 +71,7 @@ local Selects = {
         btnCtr:SetFont( "ZCity_Small" )
         btnCtr:SetTall( ScreenScale( 15 ) )
         btnCtr:Dock(BOTTOM)
-        btnCtr:DockMargin(0,ScreenScale(4),0,0)
+        btnCtr:DockMargin(0,ScreenScale(2),0,0)
         btnCtr:SetTextColor(Color(255,255,255))
         btnCtr:InvalidateParent()
         btnCtr.RColor = Color(225, 225, 225, 0)
@@ -88,7 +88,7 @@ local Selects = {
             self.HoverLerp2 = LerpFT(0.2, self.HoverLerp2 or 0, self:IsHovered() and 1 or 0)
     
             self:SetTextColor(self.RColor:Lerp(self.WColor:Lerp(red_select, self.HoverLerp2), self.HoverLerp))
-            self:SetX(self.x + ScreenScaleH(50))
+            self:SetX(self.x + ScreenScaleH(40))
         end
     end,
     Func = function(luaMenu)
@@ -114,6 +114,7 @@ local splasheh = {
     '"I THOUGHT YOU SAID PAIR OF SHOES!"',
     'HOP ON CROWS HOMIGRAD',
     'BLUE IS LOVE, BLUE IS LIFE',
+	'WHATS 9 + 10?',
     'JOHN HOMIGRAD CRUST',
     '800 TO 8',
     '"THIS ONES NOT A CAKEWALK!"',
