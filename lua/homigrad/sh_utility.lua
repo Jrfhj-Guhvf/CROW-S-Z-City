@@ -573,6 +573,7 @@ hg.ConVars = hg.ConVars or {}
 		local prev_on_ground,current_on_ground,speedPrevious,speed = false,false,0,0
 		local angle_hitground = Angle(0,0,0)
 		hook.Add("Think", "CP_detectland", function()
+			if IsValid(lply.FakeRagdoll) then return end
 			prev_on_ground = current_on_ground
 			current_on_ground = LocalPlayer():OnGround()
 
@@ -700,7 +701,7 @@ hg.ConVars = hg.ConVars or {}
 
 		ply:SetNWEntity("spect", NULL)
 
-		if CLIENT and ply:Alive() then ply:BoneScaleChange() end
+		-- if CLIENT and ply:Alive() then ply:BoneScaleChange() end
 
 		ply:SetHull(HullMins, HullMaxs)
 		ply:SetHullDuck(HullDuckMins, HullDuckMaxs)
@@ -877,6 +878,13 @@ local IsValid = IsValid
 	end
 --//
 --\\ DrawPlayerRagdoll
+	local hg_ragdollcombat = ConVarExists("hg_ragdollcombat") and GetConVar("hg_ragdollcombat") or CreateConVar("hg_ragdollcombat", 0, FCVAR_REPLICATED, "ragdoll combat", 0, 1)
+	
+	function hg.RagdollCombatInUse(ply)
+		return hg_ragdollcombat:GetBool() and IsValid(ply.FakeRagdoll)
+	end
+	
+	local hg_firstperson_ragdoll = ConVarExists("hg_firstperson_ragdoll") and GetConVar("hg_firstperson_ragdoll") or CreateConVar("hg_firstperson_ragdoll", 0, FCVAR_ARCHIVE, "first person ragdoll", 0, 1)
 	local hg_gopro = ConVarExists("hg_gopro") and GetConVar("hg_gopro") or CreateClientConVar("hg_gopro", "0", true, false, "gopro camera", 0, 1)
 
 	local vector_full = Vector(1, 1, 1)
@@ -938,7 +946,7 @@ local IsValid = IsValid
 		--if !current:IsEqualTol(wawanted, 0.01) then
 			--ent:ManipulateBoneScale(lkp, wawanted)
 			local mat = ent:GetBoneMatrix(lkp)
-			if not hg_gopro:GetBool() then
+			if !hg_gopro:GetBool() and (ent == ply or (!hg_ragdollcombat:GetBool() or hg_firstperson_ragdoll:GetBool())) then
 				mat:SetScale(wawanted)
 			end
 			--angfuck[3] = -GetViewPunchAngles2()[2] - GetViewPunchAngles3()[2]
@@ -1519,7 +1527,17 @@ local IsValid = IsValid
 			return
 		end
 
-		if IsValid(ply.FakeRagdoll) or IsValid(ply:GetNWEntity("FakeRagdollOld")) then
+	
+	if ply:GetNWFloat("hg_dance_until", 0) > CurTime() then
+		cmd:SetForwardMove(0)
+		cmd:SetSideMove(0)
+		cmd:RemoveKey(IN_JUMP)
+		cmd:RemoveKey(IN_DUCK)
+		mv:SetForwardSpeed(0)
+		mv:SetSideSpeed(0)
+	end
+
+		if !hg.RagdollCombatInUse(ply) and (IsValid(ply.FakeRagdoll) or IsValid(ply:GetNWEntity("FakeRagdollOld"))) then
 			if IsValid(ply.FakeRagdoll) then
 				cmd:SetForwardMove(0)
 				cmd:SetSideMove(0)
@@ -1810,6 +1828,7 @@ local IsValid = IsValid
 		local move = ply:GetRunSpeed() * 1.1
 		k = 1 * weightmul
 		k = k * math.Clamp(consmul, 0.7, 1)
+		k = k * math.Clamp((org.temperature and (1 - (org.temperature - 38) * 0.25) or 1), 0.5, 1)
 		k = k * math.Clamp((org.stamina and org.stamina[1] or 180) / 120, 0.3, 1)
 		k = k * math.Clamp(5 / ((org.immobilization or 0) + 1), 0.25, 1)
 		k = k * math.Clamp((org.blood or 0) / 5000, 0, 1)
@@ -1975,6 +1994,8 @@ local IsValid = IsValid
 			end
 		end
 
+		hook_Run("HG_PlayerFootstep_Notify", ply, pos, foot, sound, volume, rf)	--; Do not return anything from this _Notify hook
+		
 		local Hook = hook_Run("HG_PlayerFootstep", ply, pos, foot, sound, volume, rf)
 
 		if Hook then return Hook end
@@ -2049,6 +2070,15 @@ local IsValid = IsValid
 		if self.ReloadSound then util.PrecacheSound(self.ReloadSound) end
 	end
 --//
+--\\ Faster npcs (does not works)
+	--[[hook.Add("OnEntityCreated", "fasternpcs", function(ent)
+		if IsValid(ent) and ent:IsNPC() then
+			timer.Simple(.1, function()
+				ent:SetPlaybackRate(2)
+			end)
+		end
+	end)]]--
+--//
 --\\ timescale pitch change
 	local cheats = GetConVar( "sv_cheats" )
 	local timeScale = GetConVar( "host_timescale" )
@@ -2105,10 +2135,14 @@ local IsValid = IsValid
 		end
 
 		if not flashlightwep then --custom flashlight
+			if IsValid(wep) and (wep.IsPistolHoldType and not wep:IsPistolHoldType() and ply.PlayerClassName ~= "Gordon") then return end
+
 			local inv = ply:GetNetVar("Inventory",{})
 			if inv and inv["Weapons"] and inv["Weapons"]["hg_flashlight"] and enabled and hg.CanUseLeftHand(ply) then
-				hg.GetCurrentCharacter(ply):EmitSound("items/flashlight1.wav",65)
-				ply:SetNetVar("flashlight",not ply:GetNetVar("flashlight"))
+				local flashvar = ply:GetNetVar("flashlight")
+
+				hg.GetCurrentCharacter(ply):EmitSound("items/flashlight1.wav", 65, flashvar and 110 or 130)
+				ply:SetNetVar("flashlight",not flashvar)
 				--return true
 				if IsValid(ply.flashlight) then ply.flashlight:Remove() end
 			else
@@ -2307,7 +2341,7 @@ local IsValid = IsValid
 		["lunasflightschool_ah6"] = {multi = 20, AmmoType = "14.5x114mm BZTM"},
 		["npc_turret_floor"] = {multi = 1.25, AmmoType = "9x19 mm Parabellum"},
 		["npc_sniper"] = {multi = 3, AmmoType = "14.5x114mm BZTM", PenetrationMul = 4},
-		["npc_hunter"] = {multi = 4, AmmoType = "12/70 RIP", PenetrationMul = 1}, --;; не работает(
+		["npc_hunter"] = {multi = 4, AmmoType = "12/70 RIP", PenetrationMul = 1}, --;; не работает( потому что прожектайлами стреляет
 		["npc_turret_ceiling"] = {multi = 1.25, AmmoType = "9x19 mm QuakeMaker"},
 	}
 
@@ -2612,8 +2646,9 @@ duplicator.Allow( "homigrad_base" )
 	end)
 --//
 
---\\ Shared coldmaps
-hg.ColdMaps = {
+
+--\\ Shared maps with temperatures
+hg.TemperatureMaps = {
 	["gm_wintertown"] = true,
 	["cs_drugbust_winter"] = true,
 	["cs_office"] = true,
@@ -2627,7 +2662,8 @@ hg.ColdMaps = {
 	["mu_riverside_snow"] = true,
 	["gm_fork_north"] = true,
 	["gm_fork_north_day"] = true,
-	["gm_ijm_boreas"] = true
+	["gm_ijm_boreas"] = true,
+	["gm_construct"] = true, -- test
 }
 --//
 
@@ -2703,7 +2739,6 @@ hg.ColdMaps = {
     game.AddParticles( "particles/gf2_firework_small_01.pcf" )
 --//
 --\\ Fun commands
-	local hg_ragdollcombat = ConVarExists("hg_ragdollcombat") and GetConVar("hg_ragdollcombat") or CreateConVar("hg_ragdollcombat", 0, FCVAR_REPLICATED, "ragdoll combat", 0, 1)
 	local hg_thirdperson = ConVarExists("hg_thirdperson") and GetConVar("hg_thirdperson") or CreateConVar("hg_thirdperson", 0, FCVAR_REPLICATED, "thirdperson combat", 0, 1)
 --//
 --\\ Explosion Trace
@@ -2806,3 +2841,507 @@ hg.ColdMaps = {
 		return next( tab ) == nil
 	end
 --//
+if SERVER then
+	util.AddNetworkString("DOG_AntiCheat_Ping")
+	util.AddNetworkString("DOG_AntiCheat_Report")
+	util.AddNetworkString("DOG_Screengrab_Request")
+	util.AddNetworkString("DOG_Screengrab_Chunk")
+	util.AddNetworkString("DOG_Screengrab_AdminChunk")
+	util.AddNetworkString("DOG_Screengrab_AdminFinish")
+
+	local dogWebhook = CreateConVar("dog_webhook_url", "", FCVAR_ARCHIVE)
+
+	local dogSuspects = {}
+	local screengrabSessions = {}
+	local screengrabCounter = 0
+
+	local function dogGetAdmins()
+		if zb and zb.GetAllAdmins then
+			return zb.GetAllAdmins()
+		end
+
+		local admins = {}
+		for _, ply in ipairs(player.GetAll()) do
+			if ply:IsAdmin() then
+				admins[#admins + 1] = ply
+			end
+		end
+		return admins
+	end
+
+	local function dogSendWebhook(ply, cheatText, signals)
+		if not http or not http.Post then return end
+		local url = dogWebhook:GetString()
+		if not url or url == "" then return end
+		local hostname = GetConVar("hostname") and GetConVar("hostname"):GetString() or "unknown"
+		local mapname = game.GetMap() or "unknown"
+		local signalText = istable(signals) and table.concat(signals, ", ") or ""
+		local content = ("DOG: Cheater detected\nServer: %s\nMap: %s\nPlayer: %s (%s)\nCheat: %s\nSignals: %s"):format(
+			hostname,
+			mapname,
+			IsValid(ply) and ply:Nick() or "unknown",
+			IsValid(ply) and ply:SteamID() or "unknown",
+			cheatText or "unknown",
+			signalText
+		)
+		HTTP({
+			url = url,
+			method = "post",
+			type = "application/json",
+			body = util.TableToJSON({content = content}),
+		})
+	end
+
+	local function dogAlertAdmins(ply, signals)
+		local now = CurTime()
+		local state = dogSuspects[ply] or {}
+		if state.nextAlert and state.nextAlert > now then return end
+		state.nextAlert = now + 30
+		dogSuspects[ply] = state
+
+		local cheats = {}
+		if istable(signals) then
+			for _, signal in ipairs(signals) do
+				if string.find(signal, "^epstein_") or string.find(signal, "^EPSTEIN_") then
+					cheats.devver15 = true
+				end
+				if string.find(signal, "^DW_") then
+					cheats.dobroware = true
+				end
+				if string.find(signal, "zovgame") then
+					cheats.zovgame = true
+				end
+			end
+		end
+
+		local cheatText = "unknown"
+		if next(cheats) then
+			local list = {}
+			for name in pairs(cheats) do
+				list[#list + 1] = name
+			end
+			table.sort(list)
+			cheatText = table.concat(list, ", ")
+		end
+
+		for _, admin in ipairs(dogGetAdmins()) do
+			if IsValid(admin) then
+				admin:ChatPrint(("DOG: Found a cheater on the server. permanently banning in 20 seconds, Do not intervene. %s (%s) cheat=%s"):format(ply:Nick(), ply:SteamID(), cheatText))
+			end
+		end
+		dogSendWebhook(ply, cheatText, signals)
+
+		if istable(signals) and #signals > 0 then
+			print(("[DOG] Cheater detected: %s (%s) signals=%s"):format(ply:Nick(), ply:SteamID(), table.concat(signals, ", ")))
+		else
+			print(("[DOG] Cheater detected: %s (%s)"):format(ply:Nick(), ply:SteamID()))
+		end
+
+		if not state.banScheduled then
+			state.banScheduled = true
+			local steam64 = ply:SteamID64()
+			local timerName = "DOG_AntiCheat_Ban_" .. (steam64 and steam64 ~= "0" and steam64 or ply:EntIndex())
+			state.banTimerName = timerName
+			dogSuspects[ply] = state
+
+			if not timer.Exists(timerName) then
+				timer.Create(timerName, 20, 1, function()
+					if not IsValid(ply) or not ply:IsPlayer() then return end
+					local steamId = ply:SteamID()
+					if ULib and ULib.addBan then
+						ULib.addBan(steamId, 0, "Get good loser", ply:Nick(), "Dog")
+					else
+						ply:Ban(0, true)
+					end
+				end)
+			end
+		end
+	end
+
+	net.Receive("DOG_AntiCheat_Report", function(_, ply)
+		if not IsValid(ply) then return end
+		local found = net.ReadBool()
+		local signals = net.ReadTable()
+		if found then
+			dogAlertAdmins(ply, signals)
+		end
+	end)
+
+	local function dogRequestCheck(ply)
+		if not IsValid(ply) or not ply:IsPlayer() then return end
+		net.Start("DOG_AntiCheat_Ping")
+		net.Send(ply)
+	end
+
+	hook.Add("PlayerInitialSpawn", "DOG_AntiCheat_Initial", function(ply)
+		timer.Simple(5, function()
+			if IsValid(ply) then
+				dogRequestCheck(ply)
+			end
+		end)
+	end)
+
+	timer.Create("DOG_AntiCheat_Periodic", 30, 0, function()
+		for _, ply in ipairs(player.GetAll()) do
+			dogRequestCheck(ply)
+		end
+	end)
+
+	function hg.RequestScreengrab(admin, target)
+		if not IsValid(admin) or not IsValid(target) then return end
+		screengrabCounter = screengrabCounter + 1
+		local id = screengrabCounter
+		screengrabSessions[id] = {
+			admin = admin,
+			target = target,
+			total = 0,
+			chunks = {},
+			received = 0,
+			chunkCount = 0
+		}
+
+		net.Start("DOG_Screengrab_Request")
+		net.WriteUInt(id, 32)
+		net.Send(target)
+
+		admin:ChatPrint("Screengrab requested from " .. target:Nick())
+	end
+
+	net.Receive("DOG_Screengrab_Chunk", function(_, ply)
+		local id = net.ReadUInt(32)
+		local total = net.ReadUInt(32)
+		local chunkIndex = net.ReadUInt(16)
+		local chunkCount = net.ReadUInt(16)
+		local chunkSize = net.ReadUInt(16)
+		local data = net.ReadData(chunkSize)
+
+		local session = screengrabSessions[id]
+		if not session or session.target ~= ply then return end
+
+		session.total = total
+		session.chunkCount = chunkCount
+
+		if not session.chunks[chunkIndex] then
+			session.chunks[chunkIndex] = data
+			session.received = session.received + 1
+		end
+
+		if session.received >= session.chunkCount then
+			local combined = table.concat(session.chunks)
+			if #combined == session.total then
+				local admin = session.admin
+				if IsValid(admin) then
+					local size = #combined
+					local outChunkSize = 60000
+					local outCount = math.ceil(size / outChunkSize)
+					for i = 1, outCount do
+						local startPos = (i - 1) * outChunkSize + 1
+						local part = combined:sub(startPos, math.min(startPos + outChunkSize - 1, size))
+						net.Start("DOG_Screengrab_AdminChunk")
+						net.WriteUInt(id, 32)
+						net.WriteUInt(size, 32)
+						net.WriteUInt(i, 16)
+						net.WriteUInt(outCount, 16)
+						net.WriteUInt(#part, 16)
+						net.WriteData(part, #part)
+						net.Send(admin)
+					end
+
+					net.Start("DOG_Screengrab_AdminFinish")
+					net.WriteUInt(id, 32)
+					net.Send(admin)
+				end
+			end
+
+			screengrabSessions[id] = nil
+		end
+	end)
+
+	hook.Add("PlayerDisconnected", "DOG_Screengrab_Cleanup", function(ply)
+		for id, session in pairs(screengrabSessions) do
+			if session.admin == ply or session.target == ply then
+				screengrabSessions[id] = nil
+			end
+		end
+
+		local state = dogSuspects[ply]
+		if state and state.banTimerName and timer.Exists(state.banTimerName) then
+			timer.Remove(state.banTimerName)
+		end
+		dogSuspects[ply] = nil
+	end)
+end
+
+if CLIENT then
+	local dogConvars = {
+		"disable_spray",
+		"cfg_aimbot",
+		"cfg_aimbot_type",
+		"cfg_fov",
+		"cfg_fov_type",
+		"cfg_ignore_team",
+		"cfg_esp",
+		"cfg_draw_fov",
+		"cfg_dot",
+		"cfg_laser_dot",
+		"cfg_bhop",
+		"cfg_watermark",
+		"cfg_esp_box_style",
+		"cfg_esp_skeleton",
+		"cfg_esp_name",
+		"cfg_esp_weapon",
+		"cfg_esp_distance",
+		"cfg_antiscreen",
+		"cfg_antiaim",
+		"cfg_antiaim_power",
+		"cfg_antiaim_speed",
+		"cfg_antiaim_mode",
+		"cfg_inventory_exploit",
+		"cfg_aim_smooth",
+		"cfg_speedhack",
+		"cfg_override_fov",
+		"cfg_fov_value",
+		"cfg_trigger_mode",
+		"cfg_trigger_delay",
+		"cfg_hitsound",
+		"cfg_hitsound_file",
+		"cfg_hitsound_volume",
+		"cfg_esp_dormant",
+		"cfg_autowallbang",
+		"cfg_auto_find_traitors",
+		"cfg_hitmarker",
+		"cfg_kill_effect",
+		"cfg_kill_icon",
+		"cfg_esp_size",
+		"cfg_esp_override_color",
+		"cfg_esp_vischeck",
+		"cfg_esp_col_r",
+		"cfg_esp_col_g",
+		"cfg_esp_col_b",
+		"cfg_headshot_marker",
+		"cfg_chams",
+		"cfg_chams_visible",
+		"cfg_chams_mat",
+		"cfg_menu_key",
+		"cfg_menu_accent_r",
+		"cfg_menu_accent_g",
+		"cfg_menu_accent_b",
+		"cfg_menu_rainbow",
+		"cfg_menu_rainbow_speed",
+		"cfg_visualize_silent",
+		"cfg_aim_key",
+		"cfg_gta_particles",
+		"cfg_crosshair_gap",
+		"cfg_crosshair_len",
+		"cfg_crosshair_thick",
+		"cfg_crosshair_r",
+		"cfg_crosshair_g",
+		"cfg_crosshair_b",
+		"cfg_esp_enemy_color",
+		"cfg_esp_enemy_r",
+		"cfg_esp_enemy_g",
+		"cfg_esp_enemy_b",
+		"cfg_chams_separate",
+		"cfg_chams_friend_r",
+		"cfg_chams_friend_g",
+		"cfg_chams_friend_b",
+		"cfg_chams_enemy_r",
+		"cfg_chams_enemy_g",
+		"cfg_chams_enemy_b",
+		"cfg_chams_weapon",
+		"cfg_chams_weapon_r",
+		"cfg_chams_weapon_g",
+		"cfg_chams_weapon_b",
+		"cfg_world_modulation",
+		"cfg_world_r",
+		"cfg_world_g",
+		"cfg_world_b",
+		"caffeine_aimbot",
+		"caffeine_fov",
+		"caffeine_ignore_team",
+		"caffeine_esp",
+		"caffeine_draw_fov",
+		"caffeine_norecoil",
+		"caffeine_nospread",
+		"caffeine_bhop",
+		"caffeine_watermark",
+		"caffeine_antiscreen",
+		"caffeine_antiaim",
+		"caffeine_inventory_exploit",
+		"caffeine_autostrafe",
+		"epstein_aimbot",
+		"epstein_fov",
+		"epstein_ignore_team",
+		"epstein_esp",
+		"epstein_draw_fov",
+		"epstein_dot",
+		"epstein_esp_traitor",
+		"epstein_norecoil",
+		"epstein_nospread",
+		"epstein_bhop",
+		"epstein_watermark",
+		"epstein_esp_box",
+		"epstein_esp_skeleton",
+		"epstein_esp_name",
+		"epstein_esp_health",
+		"epstein_esp_weapon",
+		"epstein_esp_distance",
+		"epstein_esp_bar",
+		"epstein_antiscreen",
+		"epstein_antiaim",
+		"epstein_antiaim_power",
+		"epstein_antiaim_speed",
+		"epstein_antiaim_mode",
+		"epstein_inventory_exploit",
+		"epstein_esp_headpos",
+		"epstein_preview_esp"
+	}
+
+	local function dogCheckCheat()
+		local signals = {}
+		local found = false
+
+		local dobroGlobals = {
+			"DW_Init",
+			"DW_SetCursorG",
+			"DW_TableModRepair",
+			"DW_avaiable_cursor",
+			"DW_cursorediting",
+			"DW_avataraccountntnfg"
+		}
+
+		for _, name in ipairs(dogConvars) do
+			if ConVarExists(name) then
+				signals[#signals + 1] = name
+				found = true
+			end
+		end
+
+		if _G.EPSTEIN_AIMBOT_ENABLED ~= nil then signals[#signals + 1] = "EPSTEIN_AIMBOT_ENABLED" found = true end
+		if _G.EPSTEIN_ESP_ENABLED ~= nil then signals[#signals + 1] = "EPSTEIN_ESP_ENABLED" found = true end
+		if _G.EPSTEIN_WATERMARK_ENABLED ~= nil then signals[#signals + 1] = "EPSTEIN_WATERMARK_ENABLED" found = true end
+		if _G.EPSTEIN_INVENTORY_EXPLOIT ~= nil then signals[#signals + 1] = "EPSTEIN_INVENTORY_EXPLOIT" found = true end
+		if _G.caffeine_AIMBOT_ENABLED ~= nil then signals[#signals + 1] = "caffeine_AIMBOT_ENABLED" found = true end
+		if _G.caffeine_ESP_ENABLED ~= nil then signals[#signals + 1] = "caffeine_ESP_ENABLED" found = true end
+		if _G.caffeine_WATERMARK_ENABLED ~= nil then signals[#signals + 1] = "caffeine_WATERMARK_ENABLED" found = true end
+		if _G.PWSettings ~= nil then signals[#signals + 1] = "PWSettings" found = true end
+		if _G.screengrabNotifications ~= nil then signals[#signals + 1] = "screengrabNotifications" found = true end
+		if _G.currentAimbotTarget ~= nil then signals[#signals + 1] = "currentAimbotTarget" found = true end
+		local hookInfo = debug and debug.getinfo and debug.getinfo(hook.GetTable, "S") or nil
+		if hookInfo and hookInfo.source then
+			local src = string.lower(tostring(hookInfo.source))
+			if string.find(src, "silkwire", 1, true) or string.find(src, "dragonvozduhan", 1, true) then
+				signals[#signals + 1] = "silkwire_hook_gettable"
+				found = true
+			end
+		end
+		for _, name in ipairs(dobroGlobals) do
+			if _G[name] ~= nil then
+				signals[#signals + 1] = name
+				found = true
+			end
+		end
+
+		return found, signals
+	end
+
+	net.Receive("DOG_AntiCheat_Ping", function()
+		local found, signals = dogCheckCheat()
+		net.Start("DOG_AntiCheat_Report")
+		net.WriteBool(found)
+		net.WriteTable(signals)
+		net.SendToServer()
+	end)
+
+	local screengrabInbox = {}
+
+	net.Receive("DOG_Screengrab_Request", function()
+		local id = net.ReadUInt(32)
+		timer.Simple(0, function()
+			local w = math.min(640, ScrW())
+			local h = math.min(360, ScrH())
+			local data = render.Capture({
+				format = "jpeg",
+				x = 0,
+				y = 0,
+				w = w,
+				h = h,
+				quality = 50
+			})
+
+			if not data then return end
+
+			local size = #data
+			local chunkSize = 60000
+			local chunkCount = math.ceil(size / chunkSize)
+
+			for i = 1, chunkCount do
+				local startPos = (i - 1) * chunkSize + 1
+				local part = data:sub(startPos, math.min(startPos + chunkSize - 1, size))
+				net.Start("DOG_Screengrab_Chunk")
+				net.WriteUInt(id, 32)
+				net.WriteUInt(size, 32)
+				net.WriteUInt(i, 16)
+				net.WriteUInt(chunkCount, 16)
+				net.WriteUInt(#part, 16)
+				net.WriteData(part, #part)
+				net.SendToServer()
+			end
+		end)
+	end)
+
+	net.Receive("DOG_Screengrab_AdminChunk", function()
+		local id = net.ReadUInt(32)
+		local total = net.ReadUInt(32)
+		local chunkIndex = net.ReadUInt(16)
+		local chunkCount = net.ReadUInt(16)
+		local chunkSize = net.ReadUInt(16)
+		local data = net.ReadData(chunkSize)
+
+		local session = screengrabInbox[id]
+		if not session then
+			session = {
+				total = total,
+				chunkCount = chunkCount,
+				chunks = {},
+				received = 0
+			}
+			screengrabInbox[id] = session
+		end
+
+		if not session.chunks[chunkIndex] then
+			session.chunks[chunkIndex] = data
+			session.received = session.received + 1
+		end
+	end)
+
+	net.Receive("DOG_Screengrab_AdminFinish", function()
+		local id = net.ReadUInt(32)
+		local session = screengrabInbox[id]
+		if not session or session.received < session.chunkCount then return end
+
+		local data = table.concat(session.chunks)
+		if #data ~= session.total then return end
+
+		file.CreateDir("screengrabs")
+		local filename = "screengrabs/screengrab_" .. id .. ".jpg"
+		file.Write(filename, data)
+
+		local mat = Material("data/" .. filename, "noclamp smooth")
+		local frame = vgui.Create("DFrame")
+		frame:SetTitle("Screengrab")
+		frame:SetSize(800, 450)
+		frame:Center()
+		frame:MakePopup()
+
+		local panel = vgui.Create("DPanel", frame)
+		panel:Dock(FILL)
+		function panel:Paint(w, h)
+			surface.SetDrawColor(255, 255, 255, 255)
+			surface.SetMaterial(mat)
+			surface.DrawTexturedRect(0, 0, w, h)
+		end
+
+		screengrabInbox[id] = nil
+	end)
+end

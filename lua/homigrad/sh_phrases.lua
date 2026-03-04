@@ -131,6 +131,21 @@ contextPhrases = {
 			"vo/streetwar/sniper/male01/c17_09_help01.wav", --
 			"vo/streetwar/sniper/male01/c17_09_help02.wav", --
 		},
+         ["Funny"] = {
+            "joewiththeguy.wav",
+            "bbq.wav",
+            "fuckyou.wav",
+            "swordsword.wav",
+            "tomholland.wav",
+            "momishomeless.wav",
+            "MEinMYROOM.wav",
+            "ninja.wav",
+            "BINGUS.wav",
+            "jeffy.wav",
+			"wholefamily.wav",
+			"burgers.wav",
+			"fortnite.wav",
+            },
 		["Someone died"] = {
 			"vo/episode_1/npc/male01/cit_buddykilled01.wav",
 			"vo/episode_1/npc/male01/cit_buddykilled07.wav",
@@ -302,7 +317,7 @@ if CLIENT then
 	hook.Add("radialOptions", "4", function()
 		local organism = lply.organism or {}
 
-		if lply:Alive() and not organism.otrub then
+		if lply:Alive() and not organism.otrub and lply.PlayerClassName ~= "Gordon" then
 			--hg.radialOptions[#hg.radialOptions + 1] = {randomPhrase, (LocalPlayer().PlayerClassName == "Slugcat" and "Wáaaaǎa\nWāaaàaâ") or (LocalPlayer().PlayerClassName == "Gordon" and "...") or "Say something"}
 			hg.radialOptions[#hg.radialOptions + 1] = {
 				[1] = function(mouseClick)

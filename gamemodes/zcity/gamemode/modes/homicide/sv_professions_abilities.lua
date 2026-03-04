@@ -15,7 +15,7 @@ function MODE.DisplayOrganismInfo(organism, ply)
 end
 
 --\\
-hook.Add("PlayerFootstep", "HMCD_Professions_Abilities", function(ply, pos, foot, snd, volume, filter)
+hook.Add("HG_PlayerFootstep_Notify", "HMCD_Professions_Abilities", function(ply, pos, foot, snd, volume, filter)
 	ply.ProfessionAbility_FootstepsAmt = ply.ProfessionAbility_FootstepsAmt or 0
 	ply.ProfessionAbility_FootstepsAmt = ply.ProfessionAbility_FootstepsAmt + 1
 	
@@ -27,16 +27,10 @@ hook.Add("PlayerFootstep", "HMCD_Professions_Abilities", function(ply, pos, foot
 			net.WriteFloat(ply:EyeAngles().y)
 			net.WriteBool(foot == 0)
 			
-			local appearance = ply.Appearance
-			
-			if(!appearance)then
-				appearance = GetRandomAppearance(ply)
-			end
-			
-			local character_color = Appearance.AColor or color_white
+			local character_color = ply:GetNWVector("PlayerColor")
 			
 			if(!IsColor(character_color))then
-				character_color = Color(character_color.r, character_color.g, character_color.b)	--; WARNING CONFIRM
+				character_color = Color(character_color[1] * 255, character_color[2] * 255, character_color[3] * 255)
 			end
 			
 			net.WriteColor(character_color, false)
@@ -113,7 +107,7 @@ concommand.Add("hg_create_molotov", function(ply)
 		local have_bottle = ply:HasWeapon("weapon_hg_bottle")
 
 		for i, ent in ipairs(ents.FindInSphere(ply:GetPos(), 64)) do
-			if hg.gas_models[ent:GetModel()] then
+			if hg.gas_models[ent:GetModel()] and !ent:GetNWBool("EmptyBarrel", false) then
 				have_barrel_nearby = true
 				break
 			end
@@ -129,6 +123,18 @@ concommand.Add("hg_create_molotov", function(ply)
 			ply:StripWeapon("weapon_hg_bottle")
 
 			ply:Give("weapon_hg_molotov_tpik")
+		end
+    end
+end)
+
+concommand.Add("hg_create_wooden_spear", function(ply)
+	if ply:Alive() and not ply.organism.otrub and ply.Profession == "engineer" then
+		local have_hammer = ply:HasWeapon("weapon_hammer")
+		local have_table_leg = ply:HasWeapon("weapon_table_leg")
+
+		if have_hammer and have_table_leg then
+			ply:StripWeapon("weapon_table_leg")
+			ply:Give("weapon_hg_spear")
 		end
     end
 end)

@@ -39,9 +39,11 @@ local effect = {
 
 local bulletHit
 --local hg_bulletholes = GetConVar("hg_bulletholes") or CreateClientConVar("hg_bulletholes", "150", true, false, "0-500, amount of bullet hole effects (r6s-like)", 0, 500)
+local timer, util, math, IsValid, WorldToLocal, Vector, sound, EffectData, game = timer, util, math, IsValid, WorldToLocal, Vector, sound, EffectData, game
+
 local function callbackBullet(self, tr, dmg, force, bullet)
 	if CLIENT then return end
-
+	if not bullet then return end
 	bullet.limit_ricochet = bullet.limit_ricochet or 0
 	bullet.penetrated = bullet.penetrated or 0
 	if bullet.penetrated > 6 then return end
@@ -128,7 +130,7 @@ local function callbackBullet(self, tr, dmg, force, bullet)
 				Tracer = 0,
 				TracerName = "nil",
 				Dir = dir,
-				Spread = Vector(0, 0, 0),
+				Spread = vector_origin,
 				Src = SearchPos + dir,
 				Callback = bulletHit,
 				DisableLagComp = true,
@@ -161,7 +163,7 @@ local function callbackBullet(self, tr, dmg, force, bullet)
 				util.Effect("eff_tracer", effectdata1)
 			end)
 		end
-	elseif ApproachAngle < MaxRicAngle * 0.7 then--previosly 0.2, made 1 for fun
+	elseif ApproachAngle < MaxRicAngle * 0.7 then --previosly 0.2, made 1 for fun
 		--if CLIENT then return end
 		-- ping whiiiizzzz
 		local rnd = math.random(12)
@@ -169,6 +171,7 @@ local function callbackBullet(self, tr, dmg, force, bullet)
 		sound.Play("arc9_eft_shared/ricochet/ricochet" .. rnd .. ".ogg", hitPos, 75, math.random(90, 110))
 		--sound.Play("snd_jack_hmcd_ricochet_" .. math.random(1, 2) .. ".wav", hitPos, 75, math.random(90, 110))
 		--sound.Play("weapons/arccw/ricochet0" .. math.random(1, 5) .. "_quiet.wav", hitPos, 75, math.random(90, 110))
+		util.Decal("ManhackCut", tr.HitPos + tr.HitNormal, tr.HitPos - tr.HitNormal)
 		local NewVec = dir:Angle()
 		NewVec:RotateAroundAxis(hitNormal, 180)
 		NewVec = NewVec:Forward()
@@ -180,7 +183,7 @@ local function callbackBullet(self, tr, dmg, force, bullet)
 			Tracer = 0,
 			TracerName = "nil",
 			Dir = -NewVec,
-			Spread = Vector(0, 0, 0),
+			Spread = vector_origin,
 			Src = hitPos + hitNormal,
 			Callback = bulletHit,
 			DisableLagComp = true,
@@ -239,6 +242,48 @@ local hands = {
 	[7] = true,
 }
 
+local shootDecals, shootDecalRand = {
+	"decals/metal/shot6",
+	"decals/metal/shot7",
+	"decals/bigshot2",
+	"decals/bigshot4",
+	"decals/bigshot5",
+}, 1
+for i, decal in ipairs(shootDecals) do
+	game.AddDecal("Impact.ShootAdd" .. i, decal)
+	shootDecalRand = i
+end
+
+game.AddDecal("Impact.ShootPowderAdd", "decals/burn01a")
+
+local ipairs, ents = ipairs, ents
+local ents_FindInCone = ents.FindInCone
+local vectorup = Vector(0, 0, 25)
+local ang = math.cos( math.rad( 125 ) )
+local function gasInertia(pos, force, dir)
+	if force >= 150 then return end
+	for _, ent in ipairs(ents_FindInCone(pos, dir, force, ang)) do
+		--print(ent)
+		if IsValid(ent) and not ent:IsNPC() and not ent:IsPlayer() then
+			local phys = ent:GetPhysicsObject()
+			if IsValid(phys) then
+				if phys:GetMass() > 5 then continue end
+				local entpos = ent:GetPos()
+				local dist = pos:Distance(entpos)
+				local falloff = 1.5 - (dist / (force))
+
+				phys:Wake()
+				phys:ApplyForceCenter( ( ( (pos - entpos):GetNormalized() + dir) * 2 * ((-phys:GetMass() / 1.5) * (force / 5)) + vectorup ) * falloff)
+			end
+		end
+	end
+end
+
+local powderMat, powderClr, world = Material("decals/burn01a"), Color(255, 255, 255, 150), game.GetWorld()
+local allowedMats = {
+	[MAT_CONCRETE] = true,
+	[MAT_METAL] = true
+}
 bulletHit = function(ply, tr, dmgInfo, bullet, Weapon)
 	if CLIENT then return end
 	local inflictor = IsValid(ply) and not ply:IsNPC() and ply.GetActiveWeapon and ply:GetActiveWeapon() or dmgInfo:GetInflictor()
@@ -248,6 +293,7 @@ bulletHit = function(ply, tr, dmgInfo, bullet, Weapon)
 		return false, false
 	end
 
+	--// uncomment to use default impact effects
 	--[[local effectdata = EffectData()
 	effectdata:SetOrigin( tr.HitPos )
 	effectdata:SetEntity( tr.Entity )
@@ -255,13 +301,30 @@ bulletHit = function(ply, tr, dmgInfo, bullet, Weapon)
 	effectdata:SetSurfaceProp( tr.SurfaceProps )
 	effectdata:SetDamageType( dmgInfo:GetDamageType() )
 	effectdata:SetHitBox( tr.HitBox )
-	util.Effect( "Impact", effectdata )--]]
+	util.Effect( "Impact", effectdata )]]
 
+	local trPos, trNormal, trStart = tr.HitPos, tr.HitNormal, tr.StartPos
 	if tr.MatType == MAT_FLESH then
-		util.Decal("Impact.Flesh", tr.HitPos + tr.HitNormal, tr.HitPos - tr.HitNormal)
+		util.Decal("Impact.Flesh", trPos + trNormal, trPos - trNormal)
+	end
+
+	--local force = bullet.Force
+	if force >= 20 then
+		local dist = trStart:DistToSqr(trPos)
+		if dist <= 160000 and (math.random(3) == 2 or force >= 30) and tr.Entity:IsWorld() and allowedMats[tr.MatType] then
+			util.Decal("Impact.ShootAdd" .. math.random(shootDecalRand), trPos + trNormal, trPos - trNormal)
+		end
+		if force >= 30 and dist <= 1400000 and (math.random(3) == 2 or force >= 45) then
+			util.Decal("Impact.ShootPowderAdd", trPos + trNormal, trPos - trNormal)
+			--util.DecalEx(powderMat, world, trPos, trNormal, powderClr, 1, 1) uzelezz said that DecalEx crashing the game..
+		end
+
+		gasInertia(trPos, force * 3, -tr.Normal)
+		gasInertia(trStart, force * 3, tr.Normal)
 	end
 
 	timer.Simple(0,function()
+		if not bullet then return end
 		callbackBullet(Weapon or inflictor, tr, dmg, force, bullet)
 	end)
 end
@@ -368,7 +431,7 @@ function SWEP:GetTrace(bCacheTrace, desiredPos, desiredAng, NoTrace, closeanim)
 
 	local gunpos, gunang
 
-	if CLIENT then
+	if CLIENT and !closeanim then
 		gunpos, gunang = self.desiredPos, self.desiredAng
 	else
 		gunpos, gunang = self:WorldModel_Transform(true)
@@ -469,10 +532,13 @@ end*/
 function SWEP:FireBullet()
     local gun = self:GetWeaponEntity()
     local owner = self:GetOwner()
-	local isply = IsValid(owner) and owner:IsPlayer()
+	local isply = IsValid(owner) and owner:IsPlayer() and !owner.suiciding
+	local isnpc = IsValid(owner) and owner:IsNPC()
 	local ent = owner
 
-	if self:ShouldUseFakeModel() and not self.NoIdleLoop then self:PlayAnim("idle", 1) end
+	if self:ShouldUseFakeModel() and not self.NoIdleLoop and isply then
+		self:PlayAnim("idle", 1)
+	end
 
 	if isply then
     	ent = hg.GetCurrentCharacter(owner)
@@ -569,19 +635,21 @@ function SWEP:FireBullet()
 			ent:GetPhysicsObject():EnableMotion(false)
 		end
 		do return end--]]
-		
 	end
 
 	local willsuicide = IsValid(owner) and owner:GetNWFloat("willsuicide", 0) != 0 and owner:GetNWFloat("willsuicide", 0) or ((owner.startsuicide or CurTime()) + 1) or CurTime() + 1
 	local suiciding = owner.suiciding
 	local willsuicidereal = (suiciding and (willsuicide == 0 or willsuicide < CurTime()))
+	if isnpc then
+		suiciding, willsuicidereal = false, false
+	end
 
 	local bullet = {}
     bullet.Src = (willsuicidereal and headpos or (trace and (trace.HitPos - trace.Normal) or pos))
 	bullet.Dir = dir
 	bullet.Attacker = owner
 
-	if owner:IsNPC() and CLIENT then
+	if isnpc and CLIENT then
 		local npcYawOffset = math.Remap( owner:GetPoseParameter("aim_yaw"),0,1,-60,60 )
 		local npcPitchOffset = math.Remap( owner:GetPoseParameter("aim_pitch"),0,1,-88,50 )
 		bullet.Dir = (owner:GetAngles()+AngleRand(-4,4)+Angle(npcPitchOffset,npcYawOffset,0)):Forward()
@@ -601,7 +669,7 @@ function SWEP:FireBullet()
 
     bullet.Speed = ammotype.Speed
 	bullet.Distance = ammotype.Distance or 56756
-	bullet.Filter = {self.worldModel}
+	bullet.Filter = {self, self.worldModel}
 
 	bullet.noricochet = ammotype.noricochet
 	
@@ -618,6 +686,11 @@ function SWEP:FireBullet()
 	
 	bullet.Inflictor = self
 	bullet.DontUsePhysBullets = self.DontUsePhysBullets
+	if isnpc then
+		--[[self.DontUsePhysBullets = true
+		bullet.DontUsePhysBullets = true]]
+		bullet.IgnoreEntity = owner
+	end
 	
     for i = 1, numbullet do
 		local bullet = table.Copy(bullet)

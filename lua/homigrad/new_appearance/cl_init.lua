@@ -282,7 +282,7 @@ function DrawAppearance(ent, ply, setup)
 		ply.flmodel:SetNoDraw(!(ply:GetNetVar("flashlight") and (!wep.IsPistolHoldType or wep:IsPistolHoldType())) or wep.reload or flashlightwep)
 	end
 
-	if ply:GetNetVar("flashlight") and not flashlightwep and (!wep.IsPistolHoldType or wep:IsPistolHoldType() or ply.PlayerClassName == "Gordon") and not wep.reload and hg.CanUseLeftHand(ply) then
+	if ply:GetNetVar("flashlight") and not flashlightwep and (!wep.IsPistolHoldType or wep:IsPistolHoldType() or ply.PlayerClassName == "Gordon") and not wep.reload then
 		local hand = ent:LookupBone("ValveBiped.Bip01_L_Hand")
 		if not hand then return end
 

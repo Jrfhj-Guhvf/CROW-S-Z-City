@@ -359,13 +359,13 @@ hook.Add("Org Think", "Its_Karma_Bro",function(owner, org, timeValue)
 end)
 
 hook.Add("ZB_EndRound","savevalues",function()
-    for i,ply in player.Iterator() do
+    for i,ply in ipairs(player.GetAll()) do
         ply:guilt_SetValue( ply.Karma or 100 )
     end
 end)
 
 hook.Add("ZB_StartRound","NO_HARM",function()
-    for i,ply in player.Iterator() do
+    for i,ply in ipairs(player.GetAll()) do
         if (ply.Guilt or 0) < 1 then
             ply.KarmaGain = math.Clamp((ply.KarmaGain or 0.75) + 0.25, 0.75, 1.5)
         else
@@ -385,7 +385,7 @@ net.Receive("get_karma",function(len, ply)
 
     local tbl = {}
 
-    for i,pl in player.Iterator() do
+    for i,pl in ipairs(player.GetAll()) do
         tbl[pl:UserID()] = pl.Karma
     end
 
@@ -400,8 +400,11 @@ concommand.Add("hg_setkarma",function(ply,cmd,args)
     local lenargs = #args
     local newply = player.GetListByName(lenargs > 1 and args[1] or ply:Name())[1]
 
-    newply.Karma = tonumber(lenargs > 1 and args[2] or args[1])
-    newply:SetNetVar("Karma",ply.Karma)
+    if not IsValid(newply) then return end
+    local newkarma = tonumber(lenargs > 1 and args[2] or args[1])
+    if not newkarma then return end
+    newply.Karma = math.Clamp(newkarma, -60, zb.MaxKarma)
+    newply:SetNetVar("Karma", newply.Karma)
     //newply:guilt_SetValue( ply.Karma or 100 )
 end)
 

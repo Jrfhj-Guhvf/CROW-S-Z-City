@@ -558,7 +558,13 @@ if CLIENT then
 				if !hg.armorNames[v] and isnumber(k) then continue end
 				//if hg.armor[v][k].nodrop then continue end
 				local but = vgui.Create("DButton")
-				but:SetText( hg.armorNames[v] or k )
+				local prefix = string.find(k, "_")
+				if prefix then
+					k = string.sub(k, prefix + 1)
+				end
+
+				but:SetText( hg.armorNames[v] or string.NiceName(k) )
+				but:SetFont("ZCity_Tiny")
 				but:Dock( TOP )
 				but:DockMargin( 0, 0, 0, 5 )
 				but:SetSize(0, ScreenScaleH(20))

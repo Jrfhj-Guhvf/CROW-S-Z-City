@@ -7,6 +7,8 @@ local hide = {
 	["CHudDamageIndicator"] = true,
 	["CHudGeiger"] = true,
 	["CHudSquadStatus"] = true,
+	["CHudVoiceStatus"] = true,
+	["CHudVoiceSelfStatus"] = true,
 	["CHudTrain"] = true,
 	["CHudZoom"] = true,
 	["CHudSuitPower"] = true,
@@ -142,10 +144,10 @@ if IsValid(MENUPANELHUYHUY) then
 end
 
 hg.radialOptions = hg.radialOptions or {}
-local colBlack = Color(0, 0, 100, 152)
-local colOption = Color(0, 0, 100, 152)
-local colWhite = Color(200, 255, 255, 255)
-local colWhiteTransparent = Color(176, 40, 40, 100)
+local colBlack = Color(0, 0, 0, 152)
+local colOption = Color(40, 0, 55, 152)
+local colWhite = Color(255, 255, 255, 255)
+local colWhiteTransparent = Color(40, 80, 176, 100)
 local colTransparent = Color(0, 0, 0, 0)
 local matHuy = Material("vgui/white")
 local vecXY = Vector(0, 0)
@@ -156,8 +158,8 @@ local current_option = 1
 local current_option_select = 1
 local hook_Run = hook.Run
 
-local incoentCol = Color(128,0,0)
-local taitorCol = Color(155,0,0)
+local incoentCol = Color(80,160,255)
+local taitorCol = Color(40,120,220)
 
 local menuPanel
 
@@ -480,6 +482,10 @@ hook.Add("radialOptions", "7", function()
         local tbl = {function(mouseClick)
 			if mouseClick == 1 then
 				RunConsoleCommand("act", randomGestures[math.random(#randomGestures)])
+				if (ply.NextFoley or 0) < CurTime() then
+					ply:EmitSound("player/clothes_generic_foley_0" .. math.random(5) .. ".wav", 55)
+					ply.NextFoley = CurTime() + 1
+				end
 			else
 				local commands = {}
 				for i, str in ipairs(randomGestures) do
@@ -489,6 +495,10 @@ hook.Add("radialOptions", "7", function()
 								str[2]()
 							else
 								RunConsoleCommand("act", str)
+								if (ply.NextFoley or 0) < CurTime() then
+									ply:EmitSound("player/clothes_generic_foley_0" .. math.random(5) .. ".wav", 55)
+									ply.NextFoley = CurTime() + 1
+								end
 							end
 						end,
 						[2] = string.NiceName(istable(str) and str[1] or str)
@@ -530,7 +540,7 @@ local function CopyRight( text, font, x, y, color, ang, scale )
 
 	cam.PushModelMatrix( m, true )
 		draw.RoundedBox(5,0,2,w+52,h+2,Color(0,0,0))
-		draw.RoundedBox(5,0,2,w+50,h,Color(255,0,0))
+		draw.RoundedBox(5,0,2,w+50,h,Color(80,160,255))
 		draw.DrawText( text, font, 25, 0, color )	
 	cam.PopModelMatrix()
 

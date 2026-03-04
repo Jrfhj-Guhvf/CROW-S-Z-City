@@ -28,6 +28,30 @@ hg.Accessories = {
         name = "Bugeye Sunglasses"
     },
 
+     ["Rew"] = {
+        model = "models/zcity_community/rewrite_bandana.mdl",
+        bone = "ValveBiped.Bip01_Head1",
+        malepos = {Vector(-1.4,-0.5,-0.0), Angle(0,-79,-90), 1},
+        fempos = {Vector(-1.4,-0.5,-0.0), Angle(0,-79,-90), 1},
+        skin = 0,
+        placement = "face",
+        norender = true,
+        bPointShop = true,
+        price = 0,
+        name = "Rew Bandana"
+    },
+	
+   ["pluv mask"] = {
+        model = "models/props/pluvmask.mdl",
+        bone = "ValveBiped.Bip01_Head1",
+        malepos = {Vector(-6,-1.8,0),Angle(180,-80,-90), 1},
+        fempos = {Vector(-6,-1.8,0),Angle(180,-80,-90), 1},
+        skin = 0,
+        norender = true,
+        placement = "head",
+        name = "Pluv Mask"
+    },
+
     ["aviators"] = {
         model = "models/arctic_nvgs/aviators.mdl",
         bone = "ValveBiped.Bip01_Head1",
@@ -1119,7 +1143,7 @@ hg.Accessories = {
 
     ["hood"] = {
         model = "models/distac/kapishon2.mdl",
-        femmodel = "models/distac/kapishon2.mdl",
+        femmodel = "models/distac/kapishon2_f.mdl",
         bone = "ValveBiped.Bip01_Head1",
         malepos = {Vector(0.2,4.8,0),Angle(0,90,90),1},
         fempos = {Vector(-1.2,3.5,0),Angle(0,90,90),1},

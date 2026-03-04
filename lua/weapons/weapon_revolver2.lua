@@ -8,7 +8,7 @@ SWEP.Category = "Weapons - Pistols"
 SWEP.Slot = 2
 SWEP.SlotPos = 10
 SWEP.ViewModel = ""
-SWEP.WorldModel = "models/weapons/zcity/w_mr96.mdl"
+SWEP.WorldModel = "models/weapons/w_357.mdl"
 SWEP.WorldModelFake = "models/weapons/c_pist_mr96.mdl"
 
 SWEP.FakePos = Vector(-8, 2.82, 5.4)
@@ -16,8 +16,8 @@ SWEP.FakeAng = Angle(0, 0, 0)
 SWEP.AttachmentPos = Vector(-2,-1.6,-23.1)
 SWEP.AttachmentAng = Angle(0,0,90)
 SWEP.MagIndex = 53
-//MagazineSwap
---PrintBones(Entity(1):GetActiveWeapon():GetWM())
+
+
 SWEP.FakeVPShouldUseHand = true
 SWEP.AnimList = {
 	["idle"] = "idle1",
@@ -171,7 +171,7 @@ SWEP.Primary.Damage = 40
 SWEP.Primary.Spread = 0
 SWEP.Primary.Force = 30
 SWEP.Primary.Sound = {"zcitysnd/sound/weapons/revolver/revolver_fp.wav", 75, 90, 100}
-SWEP.SupressedSound = {"weapons/tfa_ins2/usp_tactical/fp_suppressed1.wav", 55, 90, 100}
+SWEP.SupressedSound = {"weapons/tfa_ins2/usp_tactical/fp_suppressed1.wav", 65, 90, 100}
 SWEP.Primary.SoundEmpty = {"zcitysnd/sound/weapons/revolver/handling/revolver_empty.wav", 75, 100, 105, CHAN_WEAPON, 2}
 SWEP.Primary.Wait = 0.2
 SWEP.ReloadTime = 5

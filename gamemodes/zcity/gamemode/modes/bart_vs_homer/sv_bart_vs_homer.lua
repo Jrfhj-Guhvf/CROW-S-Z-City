@@ -2,12 +2,12 @@ local MODE = MODE
 
 MODE.name = "bart_vs_homer"
 MODE.PrintName = "Bart vs Homer"
-
 MODE.ROUND_TIME = 300
 MODE.start_time = 8
 
+util.AddNetworkString("bvh_roundend")
 util.AddNetworkString("barthomer_start")
-util.AddNetworkString("barthomer_roundend")
+util.AddNetworkString("bvh_roundstart")
 
 local function IsHomer(ply)
     local n = ply.PlayerClassName or ""
@@ -29,6 +29,18 @@ local function AssignClasses(homer)
     end
 end
 
+local function GetHomer(self)
+    local hid = self.saved and self.saved.homer_entindex or nil
+    local homer = hid and Entity(hid) or nil
+    if not IsValid(homer) then
+        for _, ply in ipairs(player.GetHumans()) do
+            local cls = (ply.GetPlayerClass and ply:GetPlayerClass()) or ply.PlayerClassName
+            if cls == "homer" then return ply end
+        end
+    end
+    return homer
+end
+
 function MODE:Intermission()
     game.CleanUpMap()
     local all = player.GetHumans()
@@ -46,9 +58,14 @@ function MODE:Intermission()
     for _, ply in ipairs(player.GetHumans()) do
         ply:SetupTeam(ply:Team())
     end
+
     net.Start("barthomer_start")
-        net.WriteUInt(IsValid(homer) and homer:EntIndex() or 0, 16)
+    net.WriteUInt(IsValid(homer) and homer:EntIndex() or 0, 16)
     net.Broadcast()
+
+    net.Start("bvh_roundstart")
+    net.Broadcast()
+
     if hg and hg.UpdateRoundTime then
         hg.UpdateRoundTime(self.ROUND_TIME)
     end
@@ -74,7 +91,7 @@ function MODE:RoundStart()
     end
 end
 
-function MODE:PlayerSpawn(_, ply)
+function MODE:PlayerSpawn(ply)
     if not IsValid(ply) then return end
     local hid = self.saved and self.saved.homer_entindex or nil
     local homer = hid and Entity(hid) or nil
@@ -114,6 +131,40 @@ function MODE:GetTeamSpawn()
     return nil, nil
 end
 
+function MODE:CheckAlivePlayers()
+    return zb:CheckAliveTeams(true)
+end
+
+function MODE:ShouldRoundEnd()
+    local grace = (self.start_time or 8) + 10
+    if self._started and (CurTime() < (self._started + grace)) then
+        return false
+    end
+
+    local homer = GetHomer(self)
+    if not IsValid(homer) or not homer:Alive() then
+        return true
+    end
+
+    local anyBartAlive = false
+    for _, ply in ipairs(player.GetHumans()) do
+        if ply == homer then continue end
+        if ply:Alive() then
+            local cls = (ply.PlayerClassName) or ((ply.GetPlayerClass and ply:GetPlayerClass()) and ply:GetPlayerClass())
+            if cls == "bart" then
+                anyBartAlive = true
+                break
+            end
+        end
+    end
+
+    if not anyBartAlive then
+        return true
+    end
+
+    return nil
+end
+
 function MODE:EndRound()
     for _, ply in ipairs(player.GetAll()) do
         if IsValid(ply) and ply.organism then
@@ -129,51 +180,56 @@ function MODE:EndRound()
             end
         end
     end
-    timer.Simple(2,function()
-        net.Start("tdm_roundend")
+
+    local homer = GetHomer(self)
+    local winner = ""
+    if IsValid(homer) and homer:Alive() then
+        local anyBartAlive = false
+        for _, ply in ipairs(player.GetHumans()) do
+            if ply == homer then continue end
+            if ply:Alive() then
+                local cls = (ply.PlayerClassName) or ((ply.GetPlayerClass and ply:GetPlayerClass()) and ply:GetPlayerClass())
+                if cls == "bart" then
+                    anyBartAlive = true
+                    break
+                end
+            end
+        end
+        if not anyBartAlive then
+            winner = "homer"
+        end
+    else
+        winner = "barts"
+    end
+
+    local data = {}
+    for _, ply in ipairs(player.GetAll()) do
+        local cls = (ply.PlayerClassName) or ((ply.GetPlayerClass and ply:GetPlayerClass()) and ply:GetPlayerClass())
+        local role
+        if cls == "homer" then
+            role = "homer"
+        elseif cls == "bart" then
+            role = "bart"
+        end
+        if role then
+            data[#data + 1] = {
+                name = ply:Nick(),
+                nick = ply:Nick(),
+                role = role,
+                alive = ply:Alive(),
+                frags = ply:Frags()
+            }
+        end
+    end
+
+    timer.Simple(2, function()
+        net.Start("bvh_roundend")
+        net.WriteString(winner)
+        net.WriteTable(data)
         net.Broadcast()
     end)
 end
 
-local function GetHomer(self)
-    local hid = self.saved and self.saved.homer_entindex or nil
-    local homer = hid and Entity(hid) or nil
-    if not IsValid(homer) then
-        for _, ply in ipairs(player.GetHumans()) do
-            local cls = (ply.GetPlayerClass and ply:GetPlayerClass()) or ply.PlayerClassName
-            if cls == "homer" then return ply end
-        end
-    end
-    return homer
-end
-
-function MODE:CheckAlivePlayers()
-    return zb:CheckAliveTeams(true)
-end
-
-function MODE:ShouldRoundEnd()
-    local grace = (self.start_time or 8) + 10
-    if self._started and (CurTime() < (self._started + grace)) then
-        return false
-    end
-    local hid = self.saved and self.saved.homer_entindex or nil
-    local homer = hid and Entity(hid) or nil
-    if not IsValid(homer) or not homer:Alive() then
-        return true
-    end
-    local anyBartAlive = false
-    for _, ply in ipairs(player.GetHumans()) do
-        if ply == homer then continue end
-        if ply:Alive() then
-            local cls = (ply.PlayerClassName) or ((ply.GetPlayerClass and ply:GetPlayerClass()) and ply:GetPlayerClass())
-            if cls == "bart" then
-                anyBartAlive = true
-                break
-            end
-        end
-    end
-    if not anyBartAlive then
-        return true
-    end
-    return nil
+function MODE.GuiltCheck(attacker, victim, add, harm, amt)
+    return 1, true
 end

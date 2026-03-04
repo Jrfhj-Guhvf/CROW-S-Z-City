@@ -139,6 +139,8 @@ end
 hook.Add("InitPostEntity", "zb_GetMaps", function()
     zb.votestarted = false
     getmaps()
+    zb.ClearRTVVotes()
+    zb.RTVAvailableAt = CurTime() + 300
 end)
 
 net.Receive("ZB_RockTheVote_vote", function(len, ply)
@@ -179,6 +181,10 @@ function zb.EndRTV()
     if winmap == "random" then
         winmap = mappull[math.random(#mappull)]
     end
+
+	if not winmap then
+		winmap = "gm_construct"
+	end
 
     local mapFamily = GetMapFamily(winmap)
     
@@ -485,6 +491,11 @@ function zb.CheckRTVVotes(needPrint)
 end
 
 COMMANDS.rtv = {function(ply, args)
+    if zb.RTVAvailableAt and CurTime() < zb.RTVAvailableAt then
+        local remaining = math.ceil(zb.RTVAvailableAt - CurTime())
+        ply:ChatPrint("Patience you chud. RTV will be available in " .. remaining .. " seconds.")
+        return
+    end
     --print(zb.votestarted)
 	if zb.votestarted then
 		zb.RTVMenu(ply)
@@ -545,6 +556,7 @@ end, 0}
 hook.Add("ShutDown", "ResetRTVVotesOnMapChange", zb.ClearRTVVotes)
 hook.Add("PostGamemodeLoaded", "InitializeRTVSystem", function()
     zb.ClearRTVVotes()
+    zb.RTVAvailableAt = CurTime() + 240
 end)
 
 hook.Add("PlayerDisconnected", "CheckRTVAfterDisconnect", function(ply)
