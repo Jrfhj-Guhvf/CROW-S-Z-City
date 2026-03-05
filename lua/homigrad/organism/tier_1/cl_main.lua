@@ -701,16 +701,16 @@ hook.Add("Player-Ragdoll think", "organism-think-client-blood", function(ply, en
 
 	if org and org.pulse and org.o2 and org.o2[1] then
 		local pulse = org.heartbeat
-		ent.pulsethink = ent.pulsethink or 0
+		org.pulsethink = org.pulsethink or 0
 		local speed = math.Clamp(org.heartbeat / 60, 1, 3.3) * 0.5 * (org.o2[1] < 8 and 0 or 1)
-		ent.pulsethink = ent.pulsethink + (org.heartbeat > 1 and 1 or 0) * (org.holdingbreath and 0 or 1) * FrameTime() * 5.6 * (speed) * (org.lungsfunction and 1 or 0) * ((org.alive and !ent.headexploded) and 1 or 0)
+		org.pulsethink = org.pulsethink + (org.heartbeat > 1 and 1 or 0) * (org.holdingbreath and 0 or 1) * FrameTime() * 5.6 * (speed) * (org.lungsfunction and 1 or 0) * ((org.alive and !ent.headexploded) and 1 or 0)
 		
 		local torso = ent:LookupBone("ValveBiped.Bip01_Spine2")
 		--local chest = ent:LookupBone("ValveBiped.Bip01_Spine1")
 		
 		if torso then
 			if ent:GetPos():DistToSqr(lply:GetPos()) > 450 * 450 then return end
-			local sin = (math.sin(ent.pulsethink) + 1) * 0.5
+			local sin = (math.sin(org.pulsethink) + 1) * 0.5
 			local amt = 0.05 * sin * math.max(org.pulse / 70, 0.5)
 			
 			local size = 1 + amt
@@ -761,14 +761,14 @@ hook.Add("Player-Ragdoll think", "organism-think-client-blood", function(ply, en
 
 				end
 
-				ent:EmitSound("snds_jack_hmcd_breathing/" .. (ThatPlyIsFemale(ent) and "f" or "m") .. math.random(4) .. ".wav", min(heartbeat * 1.0 / ( muffed and 2.5 or 4), 45), pitch + pitchadd + math.Rand(-2, 2), vol, CHAN_AUTO, 0, muffed and 16 or 0)
+				ply:EmitSound("snds_jack_hmcd_breathing/" .. (ThatPlyIsFemale(ent) and "f" or "m") .. math.random(4) .. ".wav", min(heartbeat * 1.0 / ( muffed and 2.5 or 4), 45), pitch + pitchadd + math.Rand(-2, 2), vol, CHAN_AUTO, 0, muffed and 16 or 0)
 			elseif org.breathed and sin >= 0.1 then
 				org.breathed = false
 			end
 
 			--ent:ManipulateBonePosition(torso, vecTorso)
 
-			--local size = 1 - 0.02 * math.sin(ent.pulsethink)
+			--local size = 1 - 0.02 * math.sin(org.pulsethink)
 			--vecTorso[1] = size
 			--vecTorso[2] = size
 			--vecTorso[3] = size
