@@ -99,6 +99,7 @@ end)
 
 util.AddNetworkString("organism_send")
 util.AddNetworkString("organism_sendply")
+util.AddNetworkString("HG_TriggerManhuntEffect")
 local CurTime = CurTime
 local nullTbl = {}
 local hg_developer = ConVarExists("hg_developer") and GetConVar("hg_developer") or CreateConVar("hg_developer",0,FCVAR_SERVER_CAN_EXECUTE,"enable developer mode (enables damage traces)",0,1)
@@ -285,6 +286,47 @@ hook.Add("HomigradDamage", "Berserk", function(ply, dmgInfo, hitgroup, ent)
 			attacker.organism.berserk = attacker.organism.berserk + 0.5
 		end
 	end)
+end)
+
+hook.Add("HomigradDamage", "DizzyHeadBlunt", function(ply, dmgInfo, hitgroup, ent)
+	if not IsValid(ply) or not ply:IsPlayer() or not ply:Alive() then return end
+	if hitgroup ~= HITGROUP_HEAD then return end
+	if not dmgInfo:IsDamageType(DMG_CLUB) then return end
+
+	local org = ply.organism
+	if not org then return end
+
+	local time = CurTime()
+	if org.headhit_fx_until and org.headhit_fx_until > time then return end
+
+	local roll = math.random(100)
+	if roll > 30 then return end
+
+	org.headhit_fx_until = time + 6
+	org.headhit_fx_type = roll <= 15 and 1 or 2
+
+	if org.headhit_fx_type == 1 then
+		org.dizzy_until = org.headhit_fx_until
+		org.disorientation = math.max(org.disorientation or 0, 2.2)
+
+		net.Start("organism_send")
+		local tbl = {}
+		tbl.disorientation = org.disorientation
+		tbl.owner = ply
+		net.WriteTable(tbl)
+		net.WriteBool(true)
+		net.WriteBool(false)
+		net.WriteBool(false)
+		net.WriteBool(true)
+		net.Send(ply)
+	else
+		org.dizzy_until = nil
+
+		net.Start("HG_TriggerManhuntEffect")
+		net.WriteUInt(math.random(1, 3), 2)
+		net.WriteFloat(6)
+		net.Send(ply)
+	end
 end)
 
 hook.Add("Org Think", "Main", function(owner, org, timeValue)
