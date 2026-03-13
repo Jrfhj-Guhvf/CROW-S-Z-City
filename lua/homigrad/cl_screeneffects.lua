@@ -290,7 +290,7 @@ end
 local function isDeadBodyAllowed(ply, owner)
 	if not IsValid(ply) then return false end
 	if ply.isTraitor then return false end
-	local mode = CurrentRound()
+	local mode = CurrentRound and CurrentRound() or nil
 	local modeName = mode and (mode.Type or mode.name) or nil
 	if modeName and pvpModes[modeName] then
 		if not teamPvpModes[modeName] then return false end
