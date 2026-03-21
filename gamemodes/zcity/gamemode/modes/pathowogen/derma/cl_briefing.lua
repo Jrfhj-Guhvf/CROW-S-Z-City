@@ -1,5 +1,13 @@
 local PANEL = {}
 
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		return cvar:GetBool()
+	end
+	return GetGlobalBool("hg_aprilfools", false)
+end
+
 function PANEL:Init()
 	if IsValid(zb.FurBriefing) then
 		zb.FurBriefing:Remove()
@@ -13,10 +21,17 @@ function PANEL:Init()
 	self.dialogue = self:Add("ZB_Dialogue")
 	self.dialogue:SetPos(ScrW() / 2 - self.dialogue:GetWide() / 2, ScrH() / 2 - self.dialogue:GetTall() / 2)
 
-	self.dialogue:SetText("There's an unknown pathowogen virus ravaging your current area. Your location is now under immediate quarantine until further notice, we'll try to figure out the means of your extraction in the meantime.", 2)
+	local text = "There's an unknown pathowogen virus ravaging your current area. Your location is now under immediate quarantine until further notice, we'll try to figure out the means of your extraction in the meantime."
+	if aprilFoolsEnabled() then
+		text = [[OH GOD THE BARTS HAVE ESCAPED CONTAINMENT, RUN FOR YOUR LIVES!!!!!! OG HHODOGOFODOOODDODOD fuck you bitch die die DIE die diedie die bitch]]
+	end
+	self.dialogue:SetText(text, 2)
 	timer.Simple(15, function()
 		if !IsValid(self) then return end
 		self.dialogue:SetText("Stay safe. Over.")
+		if aprilFoolsEnabled() then
+			self.dialogue:SetText("don't stay safe BOIIIII")
+		end
 
 		self:SetKeyboardInputEnabled(false)
 

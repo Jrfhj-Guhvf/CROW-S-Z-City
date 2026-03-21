@@ -8,7 +8,45 @@ MODE.ExtractionMusic = MODE.ExtractionMusic
 
 MODE.LastHeliCheck = 0
 
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		return cvar:GetBool()
+	end
+	return GetGlobalBool("hg_aprilfools", false)
+end
+
 function MODE:Think()
+	if aprilFoolsEnabled() then
+		if not IsValid(self.AprilFoolsMusic) then
+			sound.PlayFile("sound/aprilfools/aprilfoolsgamemode.wav", "noplay noblock", function(audio)
+				if IsValid(audio) then
+					local volume = 0.2
+					local cvar = GetConVar("snd_musicvolume")
+					if cvar then
+						volume = volume * cvar:GetFloat()
+					end
+					audio:SetVolume(0)
+					audio:EnableLooping(true)
+					audio:Play()
+					self.AprilFoolsMusic = audio
+				end
+			end)
+		end
+		local chase = hg and hg.aprilFoolsChaseVolume or 0
+		local target = math.Clamp(0.2 * (1 - chase), 0, 1)
+		self.AprilFoolsMusicVolume = math.Approach(self.AprilFoolsMusicVolume or 0, target, FrameTime() * 2)
+		if IsValid(self.AprilFoolsMusic) then
+			local cvar = GetConVar("snd_musicvolume")
+			local mul = cvar and cvar:GetFloat() or 1
+			self.AprilFoolsMusic:SetVolume(self.AprilFoolsMusicVolume * mul)
+		end
+	elseif IsValid(self.AprilFoolsMusic) then
+		self.AprilFoolsMusic:Stop()
+		self.AprilFoolsMusic = nil
+		self.AprilFoolsMusicVolume = 0
+	end
+
 	self.MusicLerp = math.Approach(self.MusicLerp, self.MusicTarget, FrameTime() / 10)
 
 	if self.MusicLerp > 0.01 then

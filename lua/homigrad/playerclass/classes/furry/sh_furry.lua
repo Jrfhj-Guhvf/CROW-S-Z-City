@@ -954,9 +954,18 @@ if CLIENT then
     end)
 
     local chaseSound
+    local chaseSoundPath
     local chaseVolume = 0
     local nextChaseCheck = 0
     local lastChaseTime = 0
+    hg = hg or {}
+    local function aprilFoolsEnabled()
+        local cvar = GetConVar("hg_aprilfools")
+        if cvar then
+            return cvar:GetBool()
+        end
+        return GetGlobalBool("hg_aprilfools", false)
+    end
     hook.Add("Think","FurryChaseSound",function()
         local ply = LocalPlayer()
         if not IsValid(ply) then return end
@@ -981,9 +990,18 @@ if CLIENT then
         end
 
         chaseVolume = math.Approach(chaseVolume, targetVolume, dt * 3)
+        hg.aprilFoolsChaseVolume = chaseVolume
         if chaseVolume > 0 then
+            local desiredPath = aprilFoolsEnabled() and "aprilfools/aprilfoolschase.wav" or "chase.wav"
+            if chaseSoundPath ~= desiredPath then
+                if chaseSound then
+                    chaseSound:Stop()
+                    chaseSound = nil
+                end
+                chaseSoundPath = desiredPath
+            end
             if not chaseSound then
-                chaseSound = CreateSound(ply, "chase.wav")
+                chaseSound = CreateSound(ply, chaseSoundPath)
                 chaseSound:PlayEx(chaseVolume, 100)
             else
                 if not chaseSound:IsPlaying() then

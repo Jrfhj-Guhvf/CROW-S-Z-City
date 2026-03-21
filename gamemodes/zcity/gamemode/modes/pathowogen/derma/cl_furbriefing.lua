@@ -1,5 +1,13 @@
 local PANEL = {}
 
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		return cvar:GetBool()
+	end
+	return GetGlobalBool("hg_aprilfools", false)
+end
+
 function PANEL:Init()
 	if IsValid(zb.FurBriefing) then
 		zb.FurBriefing:Remove()
@@ -13,10 +21,14 @@ function PANEL:Init()
 	self.dialogue = self:Add("ZB_DialogueFur")
 	self.dialogue:SetPos(ScrW() / 2 - self.dialogue:GetWide() / 2, ScrH() / 2 - self.dialogue:GetTall() / 2)
 
-	self.dialogue:SetText("Meow meow meow meow meow, meow meow meow, meow meow meow meow meow meow, meow meow meow meow. OwO. Meow meow meow meow. Meow meow, meow meow meow.", 2)
+	local text = "Meow meow meow meow meow, meow meow meow, meow meow meow meow meow meow, meow meow meow meow. OwO. Meow meow meow meow. Meow meow, meow meow meow."
+	if aprilFoolsEnabled() then
+		text = [[hello my amigo barts Lets' Fucking Smoke those homers am i right guys? .okay go fuck yourself you bitch, kill yourself bitchhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh]]
+	end
+	self.dialogue:SetText(text, 2)
 	timer.Simple(15, function()
 		if !IsValid(self) then return end
-		self.dialogue:SetText("Meow. :3")
+		self.dialogue:SetText("DON'T FUCK WITH ME BITCH!")
 
 		self:SetKeyboardInputEnabled(false)
 

@@ -88,3 +88,70 @@ MODE.OneLeftContractor = {
 	"Operative, you're the last one alive. Mission complete. Get to the extraction point.",
 	"Operative, your mission is a success. Proceed to the extraction point."
 }
+
+MODE.FirstCasualtyAprilfoolsCommander = {
+	"YO ONE GUY IS DONE WHAT THE FUCK ARE WE DOING",
+}
+
+MODE.HalfWayAprilfoolsCommander = {
+	"are we serious reight neow bro, half of you are rebarted!!!!",
+}
+
+MODE.HalfWayHeliAprilfoolsCommander = {
+	"stupid retards the fucking helicopter is coming, patience you stupid homers",
+}
+
+MODE.HalfWayExtractAprilfoolsCommander = {
+	"there's half of you stupid idiots, probably killed by the barts or something else, the helicopter is coming",
+}
+
+MODE.ThreeLeftAprilfoolsCommander = {
+	"there's like three of you god DAMN RETARDS, you guys are doomed bruh",
+}
+
+MODE.ThreeLeftHeliAprilfoolsCommander = {
+	"THERE IS THREE OF YOU GUYS CAN WE TRY BEING A LITTLE BIT MORE SMARTER AND LIVE UNTIL THAT DAMN HELICOPTER ARRIVES???",
+}
+
+MODE.TwoLeftAprilfoolsCommander = {
+	"you guys are a duo now, please god, kill them",
+}
+
+MODE.OneLeftAprilfoolsCommander = {
+	"you are the only one left, Haha i am living in my yacht right now living the life while you guys get mauled by barts LMAO"
+}
+
+MODE.FirstCasualtyContractor = {
+	"First kill.",
+	"One already down, stay focused.",
+	"One dead survivor.",
+	"Someone is dead now. Assimilated or shot, it doesn't matter. Continue."
+}
+
+MODE.HalfWayContractor = {
+	"You've made it to the half survivors. Impressive.",
+	"About half of your enemies are now dead. Just keeping you informed.",
+	"Half of 'em dead already. Good job operative, continue your mission.",
+	"Good job operative, about half of the survivors are now dead.",
+}
+
+MODE.ThreeLeftContractor = {
+	"There's only two more survivors left. Finish what you started.",
+	"Only two more to go. You know what to do.",
+	"Only 2 survivors left. Good job, you're almost there.",
+	"You, and two other survivors are what's left. Find 'em, and kill 'em."
+}
+
+MODE.TwoLeftContractor = {
+	"There's now only a single survivor. Finish him.",
+	"Only one survivor to go now. Don't mess it up.",
+	"Find and kill the last one. Your extraction awaits.",
+	"One enemy left. Find him."
+}
+
+MODE.OneLeftContractor = {
+	"You're the only one left in this massacre. Mission complete. Proceed to your extraction point.",
+	"You've got them all. Mission complete. Get to the extraction point.",
+	"Operative, you're the last one alive. Mission complete. Get to the extraction point.",
+	"Operative, your mission is a success. Proceed to the extraction point."
+}

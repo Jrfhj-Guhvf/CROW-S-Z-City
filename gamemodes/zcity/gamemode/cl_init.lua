@@ -429,6 +429,20 @@ surface.CreateFont("ZB_InterfaceHumongous", {
 
 hg.playerInfo = hg.playerInfo or {}
 
+local function getPlaytimeText(ply)
+	local secs = ply:GetNWFloat("hg_playtime_total", 0)
+	local days = math.floor(secs / 86400)
+	local hours = math.floor((secs % 86400) / 3600)
+	local minutes = math.floor((secs % 3600) / 60)
+	if days > 0 then
+		return string.format("%dd %02dh %02dm", days, hours, minutes)
+	end
+	if hours > 0 then
+		return string.format("%dh %02dm", hours, minutes)
+	end
+	return string.format("%dm", minutes)
+end
+
 local function addToPlayerInfo(ply, muted, volume)
 	hg.playerInfo[ply:SteamID()] = {muted and true or false, volume}
 
@@ -790,9 +804,10 @@ function GM:ScoreboardShow()
 	
 			surface.SetFont("ZB_InterfaceMediumLarge")
 			surface.SetTextColor(col.r, col.g, col.b, col.a)
-			local lengthX, lengthY = surface.GetTextSize(ply:Name() or "He quited...")
+			local nameText = (ply:Name() or "He quited...") .. " [" .. getPlaytimeText(ply) .. "]"
+			local lengthX, lengthY = surface.GetTextSize(nameText)
 			surface.SetTextPos(avatarSize + 12, h / 2 - lengthY / 2)
-			surface.DrawText(ply:Name() or "He quited...")
+			surface.DrawText(nameText)
 	
 			surface.SetFont("ZB_InterfaceMediumLarge")
 			surface.SetTextColor(col.r, col.g, col.b, col.a)
@@ -871,9 +886,10 @@ function GM:ScoreboardShow()
 
 			surface.SetFont( "ZB_InterfaceMediumLarge" )
 			surface.SetTextColor(col.r,col.g,col.b,col.a)
-			local lengthX, lengthY = surface.GetTextSize( ply:Name() or "He quited..." )
+			local nameText = (ply:Name() or "He quited...") .. " [" .. getPlaytimeText(ply) .. "]"
+			local lengthX, lengthY = surface.GetTextSize( nameText )
 			surface.SetTextPos(avatarSize + 12, h / 2 - lengthY / 2)
-			surface.DrawText(ply:Name() or "He quited...")
+			surface.DrawText(nameText)
 
 			surface.SetFont( "ZB_InterfaceMediumLarge" )
 			surface.SetTextColor(col.r,col.g,col.b,col.a)

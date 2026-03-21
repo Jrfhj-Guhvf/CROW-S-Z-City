@@ -756,6 +756,8 @@ local fatman = {
 	activeUntil = 0,
 	startedAt = 0,
 	duration = 0,
+	cooldownUntil = 0,
+	cooldownTime = 120,
 	regular = CreateMaterial("hg_fatman_regular", "UnlitGeneric", {
 		["$basetexture"] = "custom/REGULARfatman",
 		["$vertexcolor"] = "1",
@@ -779,6 +781,7 @@ hook.Add("Think", "hg-aprilfools-fatman", function()
 	if now < fatman.nextCheck then return end
 	fatman.nextCheck = now + 5
 	if now < fatman.activeUntil then return end
+	if now < fatman.cooldownUntil then return end
 	if math.random() <= 0.2 then
 		local duration = SoundDuration("fatman.wav")
 		if not duration or duration <= 0 then
@@ -787,6 +790,7 @@ hook.Add("Think", "hg-aprilfools-fatman", function()
 		fatman.duration = duration
 		fatman.startedAt = now
 		fatman.activeUntil = now + duration
+		fatman.cooldownUntil = now + fatman.cooldownTime
 		surface.PlaySound("fatman.wav")
 	end
 end)

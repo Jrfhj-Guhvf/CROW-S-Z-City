@@ -1756,6 +1756,16 @@ function SWEP:GetAdditionalValues()
 		end
 	end
 
+	local flyEnd = self:GetNWFloat("hg_gunfly_end", 0)
+	if flyEnd > CurTime() then
+		local flyStart = self:GetNWFloat("hg_gunfly_start", flyEnd - 1)
+		local duration = math.max(flyEnd - flyStart, 0.1)
+		local t = math.Clamp((CurTime() - flyStart) / duration, 0, 1)
+		local ease = math.ease.InOutSine(t)
+		self.AdditionalPos2[3] = self.AdditionalPos2[3] + 160 * ease
+		self.AdditionalAng2[1] = self.AdditionalAng2[1] + 15 * ease
+	end
+
 	//self.AdditionalAngPreLerp[1] = self.AdditionalAngPreLerp[1] + ply.offsetView[2]
 	//self.AdditionalAngPreLerp[2] = self.AdditionalAngPreLerp[2] - ply.offsetView[1]
 	

@@ -131,6 +131,13 @@ MODE.TypeSounds = {
 	["wildwest"] = "snd_jack_hmcd_wildwest.mp3",
 	["supermario"] = "snd_jack_hmcd_psycho.mp3"
 }
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		return cvar:GetBool()
+	end
+	return GetGlobalBool("hg_aprilfools", false)
+end
 local fade = 0
 net.Receive("HMCD_RoundStart",function()
 	for i, ply in player.Iterator() do
@@ -391,6 +398,32 @@ MODE.TypeObjectives.supermario = {
 		color1 = Color(0,120,190)
 	},
 }
+local MM2_Objectives = {
+	traitor = {
+		objective = "You are the murderer. Unalive everyone. (we have to go family friendly cause this is roblox)",
+		name = "Murderer",
+		color1 = Color(190,0,0),
+		color2 = Color(190,0,0)
+	},
+	gunner = {
+		objective = "You are the sheriff. Find and Unalive the murderer. (we have to go family friendly cause this is roblox)",
+		name = "Sheriff",
+		color1 = Color(0,120,190),
+		color2 = Color(158,0,190)
+	},
+	innocent = {
+		objective = "You are innocent. Avoid the murderer and help the sheriff.",
+		name = "Innocent",
+		color1 = Color(0,120,190),
+		color2 = Color(158,0,190)
+	},
+}
+local function getTypeObjectives()
+	if aprilFoolsEnabled() then
+		return MM2_Objectives
+	end
+	return MODE.TypeObjectives[MODE.Type]
+end
 
 function MODE:RenderScreenspaceEffects()
 	-- MODE.DynamicFadeScreenEndTime = MODE.DynamicFadeScreenEndTime or 0
@@ -422,19 +455,24 @@ local handicap = {
 }
 
 function MODE:HUDPaint()
-	if not MODE.Type or not MODE.TypeObjectives[MODE.Type] then return end
+	local objectives = getTypeObjectives()
+	if not MODE.Type or not objectives then return end
 	if lply:Team() == TEAM_SPECTATOR then return end
 	if StartTime + 12 < CurTime() then return end
 	
 	fade = Lerp(FrameTime()*1, fade, math.Clamp(StartTime + 5 - CurTime(),-2,2))
 
-	draw.SimpleText("Homicide | " .. (MODE.TypeNames[MODE.Type] or "Unknown"), "ZB_HomicideMediumLarge", sw * 0.5, sh * 0.1, Color(0,162,255, 255 * fade), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+	local modeLabel = MODE.TypeNames[MODE.Type] or "Unknown"
+	if aprilFoolsEnabled() then
+		modeLabel = "Murder Mystery 2"
+	end
+	draw.SimpleText("Homicide | " .. modeLabel, "ZB_HomicideMediumLarge", sw * 0.5, sh * 0.1, Color(0,162,255, 255 * fade), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
-	local Rolename = ( lply.isTraitor and MODE.TypeObjectives[MODE.Type].traitor.name ) or ( lply.isGunner and MODE.TypeObjectives[MODE.Type].gunner.name ) or MODE.TypeObjectives[MODE.Type].innocent.name
-	local ColorRole = ( lply.isTraitor and MODE.TypeObjectives[MODE.Type].traitor.color1 ) or ( lply.isGunner and MODE.TypeObjectives[MODE.Type].gunner.color1 ) or MODE.TypeObjectives[MODE.Type].innocent.color1
+	local Rolename = ( lply.isTraitor and objectives.traitor.name ) or ( lply.isGunner and objectives.gunner.name ) or objectives.innocent.name
+	local ColorRole = ( lply.isTraitor and objectives.traitor.color1 ) or ( lply.isGunner and objectives.gunner.color1 ) or objectives.innocent.color1
 	ColorRole.a = 255 * fade
 
-	local color_role_innocent = MODE.TypeObjectives[MODE.Type].innocent.color1
+	local color_role_innocent = objectives.innocent.color1
 	color_role_innocent.a = 255 * fade
 
 	local color_white_faded = Color(255, 255, 255, 255 * fade)
@@ -502,7 +540,7 @@ function MODE:HUDPaint()
 		draw.SimpleText(handicap[lply:GetLocalVar("karma_sickness", 0)], "ZB_HomicideMedium", sw * 0.5, cur_y, color_role_innocent, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 	end
 
-	local Objective = ( lply.isTraitor and MODE.TypeObjectives[MODE.Type].traitor.objective ) or ( lply.isGunner and MODE.TypeObjectives[MODE.Type].gunner.objective ) or MODE.TypeObjectives[MODE.Type].innocent.objective
+	local Objective = ( lply.isTraitor and objectives.traitor.objective ) or ( lply.isGunner and objectives.gunner.objective ) or objectives.innocent.objective
 
 	if(lply.SubRole and lply.SubRole != "")then
 		if(MODE.SubRoles[lply.SubRole] and MODE.SubRoles[lply.SubRole].Objective)then
@@ -519,7 +557,7 @@ function MODE:HUDPaint()
 		Objective = "Round is starting..."
 	end
 
-	local ColorObj = ( lply.isTraitor and MODE.TypeObjectives[MODE.Type].traitor.color2 ) or ( lply.isGunner and MODE.TypeObjectives[MODE.Type].gunner.color2 ) or MODE.TypeObjectives[MODE.Type].innocent.color2 or Color(255,255,255)
+	local ColorObj = ( lply.isTraitor and objectives.traitor.color2 ) or ( lply.isGunner and objectives.gunner.color2 ) or objectives.innocent.color2 or Color(255,255,255)
 	ColorObj.a = 255 * fade
 	draw.SimpleText( Objective, "ZB_HomicideMedium", sw * 0.5, sh * 0.9, ColorObj, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
@@ -547,6 +585,14 @@ net.Receive("hmcd_roundend", function()
 		local gunner = net.ReadEntity()
 		gunners[key] = gunner
 		gunner.isGunner = true
+	end
+	local winner = net.ReadInt(4)
+	if aprilFoolsEnabled() then
+		if winner == 0 then
+			EmitSound("aprilfools/sheriffwin.wav", vector_origin, 0, CHAN_AUTO, 1.25, 100, 0, 100)
+		elseif winner == 1 then
+			EmitSound("aprilfools/traitorwin.wav", vector_origin, 0, CHAN_AUTO, 1.25, 100, 0, 100)
+		end
 	end
 
 	timer.Simple(2.5, function()

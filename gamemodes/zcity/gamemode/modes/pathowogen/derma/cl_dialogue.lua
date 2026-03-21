@@ -4,7 +4,29 @@ local sw, sh = ScrW(), ScrH()
 
 local text = "There's an unknown pathowogen virus ravaging your current area. Your location is now under immediate quarantine until further notice, we'll try to figure out the means of your extraction in the meantime."
 
-local COMMANDER = Material("zbattle/COMMANDER.png", "smooth")
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		return cvar:GetBool()
+	end
+	return GetGlobalBool("hg_aprilfools", false)
+end
+
+local COMMANDER_DEFAULT = Material("zbattle/COMMANDER.png", "smooth")
+local function loadCommanderApril()
+	local mat = Material("custom/Homer", "smooth")
+	if not mat or mat:IsError() then
+		mat = Material("custom/Homer.png", "smooth")
+	end
+	if not mat or mat:IsError() then
+		mat = Material("custom/homer", "smooth")
+	end
+	if not mat or mat:IsError() then
+		mat = Material("custom/homer.png", "smooth")
+	end
+	return mat
+end
+local COMMANDER_APRIL = loadCommanderApril()
 
 surface.CreateFont("ZB_PathowogenDialogue", {
 	font = "Bahnschrift",
@@ -115,7 +137,7 @@ function PANEL:Paint(w, h)
 	surface.SetDrawColor(33, 30, 56)
 	surface.DrawRect(0, 0, w * 0.3, h)
 
-	surface.SetMaterial(COMMANDER)
+	surface.SetMaterial(aprilFoolsEnabled() and COMMANDER_APRIL or COMMANDER_DEFAULT)
 	surface.SetDrawColor(255, 255, 255)
 	surface.DrawTexturedRect(0, 0, w * 0.3, h)
 

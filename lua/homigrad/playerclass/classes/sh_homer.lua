@@ -20,6 +20,7 @@ end
 function CLASS.On(self)
     if CLIENT then return end
     self:SetModel("models/hellinspector/homerharm/homerfm_pm.mdl")
+    self:SetNetVar("Fury13_Active", nil)
     self:SetPlayerColor(Color(255, 217, 15):ToVector())
     self:SetSubMaterial()
     self:SetBodyGroups("00000000000")

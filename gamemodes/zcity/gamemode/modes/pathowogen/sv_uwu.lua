@@ -29,6 +29,29 @@ util.AddNetworkString("zb_extractionpoint")
 util.AddNetworkString("zb_traitorextractionpoint")
 util.AddNetworkString("ZB_Pathowogen_RoundEnd")
 
+local function aprilFoolsEnabled()
+	local cvar = GetConVar("hg_aprilfools")
+	if cvar then
+		return cvar:GetBool()
+	end
+	return GetGlobalBool("hg_aprilfools", false)
+end
+
+local function applyBartLook(ply)
+	ply:SetModel("models/hellinspector/the_simpsons_game/bart.mdl")
+	ply:SetPlayerColor(Color(255, 217, 15):ToVector())
+	ply:SetSubMaterial()
+	ply:SetBodyGroups("00000000000")
+	ply:SetNWString("PlayerName", "Bart")
+end
+
+local function getCommanderTable(self, normalKey, aprilKey)
+	if aprilFoolsEnabled() then
+		return self[aprilKey] or self[normalKey]
+	end
+	return self[normalKey]
+end
+
 function MODE:CreateTimer(name, delay, repetitions, func)
 	self.saved.Timers = self.saved.Timers or {}
 
@@ -256,7 +279,11 @@ function MODE:SetupSurvivor(ply)
 	ply:SelectWeapon("weapon_hands_sh")
 
 	zb.GiveRole(ply, "Survivor", Color(230, 74, 74))
-	ply:SetPlayerClass()
+	if aprilFoolsEnabled() then
+		ply:SetPlayerClass("homer")
+	else
+		ply:SetPlayerClass()
+	end
 
 	net.Start("zb_furbriefing")
 	net.Send(ply)
@@ -265,6 +292,7 @@ function MODE:SetupSurvivor(ply)
 end
 
 function MODE:RoundStart()
+	updateLootTableForAprilFools()
 	self.furries = {}
 	self.humans = {}
 
@@ -380,6 +408,9 @@ function MODE:RoundStart()
 
 	for ply, _ in pairs(self.saved.furs) do  // set them up later from everyone else so that they spawn the furthest from everyone
 		ply:SetPlayerClass("furry", {instant = true})
+		if aprilFoolsEnabled() then
+			applyBartLook(ply)
+		end
 
 		ply:Give("weapon_hands_sh")
 		ply:SelectWeapon("weapon_hands_sh")
@@ -618,7 +649,7 @@ function MODE:ShouldRoundEnd()
 
 	if !self.saved.FirstCasualty and self.saved.PlayerCount > 3 and #self.humans < self.saved.PlayerCount then
 		self.saved.FirstCasualty = true
-		self:BroadcastCommander(table.Random(self.FirstCasualtyCommander))
+		self:BroadcastCommander(table.Random(getCommanderTable(self, "FirstCasualtyCommander", "FirstCasualtyAprilfoolsCommander")))
 		self:BroadcastContractor(table.Random(self.FirstCasualtyContractor))
 	end
 
@@ -626,11 +657,11 @@ function MODE:ShouldRoundEnd()
 		self.saved.HalfWay = true
 
 		if self.saved.CloseQuarters then
-			self:BroadcastCommander(table.Random(self.HalfWayExtractCommander))
+			self:BroadcastCommander(table.Random(getCommanderTable(self, "HalfWayExtractCommander", "HalfWayExtractAprilfoolsCommander")))
 
 			self:InitiateCQExtraction()
 		else
-			self:BroadcastCommander(table.Random(self.HalfWayHeliCommander))
+			self:BroadcastCommander(table.Random(getCommanderTable(self, "HalfWayHeliCommander", "HalfWayHeliAprilfoolsCommander")))
 
 			if !IsValid(self.saved.UWUCopter) then
 				self:SpawnSquadHelicopter()
@@ -642,20 +673,20 @@ function MODE:ShouldRoundEnd()
 
 	if !self.saved.ThreeLeft and self.saved.PlayerCount > 6 and #self.humans <= 3 then
 		self.saved.ThreeLeft = true
-		self:BroadcastCommander(table.Random(self.ThreeLeftCommander))
+		self:BroadcastCommander(table.Random(getCommanderTable(self, "ThreeLeftCommander", "ThreeLeftAprilfoolsCommander")))
 		self:BroadcastContractor(table.Random(self.ThreeLeftContractor))
 	end
 
 	if !self.saved.TwoLeft and self.saved.PlayerCount > 6 and #self.humans <= 2 then
 		self.saved.TwoLeft = true
-		self:BroadcastCommander(table.Random(self.TwoLeftCommander))
+		self:BroadcastCommander(table.Random(getCommanderTable(self, "TwoLeftCommander", "TwoLeftAprilfoolsCommander")))
 		self:BroadcastContractor(table.Random(self.TwoLeftContractor))
 	end
 
 	if !self.saved.OneLeft and self.saved.PlayerCount > 3 and #self.humans <= 1 then
 		self.saved.OneLeft = true
 
-		self:BroadcastCommander(table.Random(self.OneLeftCommander))
+		self:BroadcastCommander(table.Random(getCommanderTable(self, "OneLeftCommander", "OneLeftAprilfoolsCommander")))
 		self:BroadcastContractor(table.Random(self.OneLeftContractor))
 
 		if !self.saved.ContractorEscapee then
@@ -783,6 +814,22 @@ MODE.LootTable = {
 		{1, "weapon_fury13"}
 	}}
 }
+
+local function updateLootTableForAprilFools()
+	if not MODE._LootTableBase then
+		MODE._LootTableBase = table.Copy(MODE.LootTable)
+	end
+	MODE.LootTable = table.Copy(MODE._LootTableBase)
+	if not aprilFoolsEnabled() then return end
+	for _, tier in ipairs(MODE.LootTable) do
+		local items = tier[2]
+		for i = #items, 1, -1 do
+			if items[i][2] == "weapon_fury13" then
+				table.remove(items, i)
+			end
+		end
+	end
+end
 
 function MODE:CanPlayerEnterVehicle(ply, ent) -- damdn i forgot about the broken mode hooks lmao
 	if ply.PlayerClassName == "furry" then

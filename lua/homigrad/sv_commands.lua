@@ -206,17 +206,4 @@ if SERVER then
 
     end, 2, "ник игрока сообщение"}
 
-    concommand.Add("hg_dance", function(ply)
-        if not IsValid(ply) then return end
-        local duration = 20
-        ply:SetNWFloat("hg_dance_until", CurTime() + duration)
-        ply:SetNWBool("TauntStopMoving", true)
-        ply:EmitSound("actmod/ab/remyboys.wav", 100, 100, 1, CHAN_AUTO)
-        timer.Simple(duration, function()
-            if IsValid(ply) then
-                ply:SetNWBool("TauntStopMoving", false)
-                ply:StopSound("actmod/ab/remyboys.wav")
-            end
-        end)
-    end)
 end
