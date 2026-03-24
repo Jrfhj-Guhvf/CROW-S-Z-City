@@ -598,7 +598,7 @@ if SERVER then
 	end
 
 	function SWEP:Heal(ent, mode, bone)
-		if ent:IsNPC() then
+		if ent:IsNPC() or ent.organism.superfighter then
 			self:NPCHeal(ent, 0.15, "snd_jack_hmcd_bandage.wav")
 		end
 
@@ -1128,18 +1128,18 @@ function SWEP:NPCHeal(npc, mul, snd)
 	if not npc then
 		npc = self:GetOwner()
 	end
-
+	if npc:Health() >= (npc:IsNPC() and (npc:GetMaxHealth() * 2) or npc:GetMaxHealth()) then return end
 	if npc:IsNPC() then
 		self:SetHold("melee")
+	end
 		if not mul then
 			mul = 0.3
 		end
-		npc:SetHealth(math.Clamp(npc:Health() + (npc:GetMaxHealth() * 1 * mul), 0, npc:GetMaxHealth() * math.Clamp(2 * mul, 2, 100)))
+		npc:SetHealth(math.Clamp(npc:Health() + (npc:GetMaxHealth() * 1 * mul), 0, npc:GetMaxHealth() * (npc:IsNPC() and math.Clamp(2 * mul, 2, 100) or 1)))
 		npc:EmitSound(snd or "snd_jack_hmcd_bandage.wav", 75, math.random(95, 105))
 
-		if SERVER then
-			self:Remove()
-		end
+	if SERVER then
+		self:Remove()
 	end
 end
 
