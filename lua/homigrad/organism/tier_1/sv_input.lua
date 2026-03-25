@@ -504,48 +504,125 @@ hook.Add("EntityTakeDamage", "homigrad-damage", function(ent, dmgInfo)
 		dmgInfo:ScaleDamage(1.15)
 	end
 
-	if attackerPly and victimRagdolled and IsValid(ent) and ent:IsRagdoll() and isHands and dmgInfo:IsDamageType(DMG_CLUB) then
-		local tr = hg and hg.GetTraceDamage and hg.GetTraceDamage(ent, dmgInfo:GetDamagePosition(), dmgInfo:GetDamageForce()) or nil
+	local isLegKick = attackerPly and (attackerPly:GetNWFloat("InLegKick", 0) > CurTime())
+	-- decerebrate handled in death ragdoll logic
+	if attackerPly and victimRagdolled and IsValid(ent) and dmgInfo:IsDamageType(DMG_CLUB) then
+		local gibEnt = ent
+		if not gibEnt:IsRagdoll() and IsValid(victim) and IsValid(victim.FakeRagdoll) then
+			gibEnt = victim.FakeRagdoll
+		end
+
+		local dmgPos = dmgInfo:GetDamagePosition()
+		local tr = (hg and hg.GetTraceDamage and IsValid(gibEnt)) and hg.GetTraceDamage(gibEnt, dmgPos, dmgInfo:GetDamageForce()) or nil
 		local physBone = tr and tr.PhysicsBone or nil
-		local boneId = physBone and ent.TranslatePhysBoneToBone and ent:TranslatePhysBoneToBone(physBone) or nil
-		local boneName = boneId and ent.GetBoneName and ent:GetBoneName(boneId) or nil
+		local boneId = (physBone and gibEnt.TranslatePhysBoneToBone) and gibEnt:TranslatePhysBoneToBone(physBone) or nil
+		local boneName = (boneId and gibEnt.GetBoneName) and gibEnt:GetBoneName(boneId) or nil
+
 		local hitgroup = boneName and hg and hg.bonetohitgroup and hg.bonetohitgroup[boneName] or nil
+		local isHead = (hitgroup == HITGROUP_HEAD) or (boneName and (string.find(boneName, "Head", 1, true) or string.find(boneName, "Bip01_Head", 1, true)))
+		local isNeck = boneName and (string.find(boneName, "Neck", 1, true) or string.find(boneName, "Bip01_Neck", 1, true)) or false
 
-		if hitgroup == HITGROUP_HEAD then
-			dmgInfo:ScaleDamage(1.45)
-
-			victim._hg_headstomp_reset = victim._hg_headstomp_reset or 0
-			if victim._hg_headstomp_reset < CurTime() then
-				victim._hg_headstomp_need = math.random(6, 8)
-				victim._hg_headstomp_hits = 0
-			end
-
-			victim._hg_headstomp_reset = CurTime() + 10
-			victim._hg_headstomp_hits = (victim._hg_headstomp_hits or 0) + 1
-
-			if (victim._hg_headstomp_hits or 0) >= (victim._hg_headstomp_need or 7) and victim:Alive() then
-				if isfunction(Gib_Input) then
-					local headBone = ent.LookupBone and ent:LookupBone("ValveBiped.Bip01_Head1") or nil
-					if headBone then
-						Gib_Input(ent, headBone, dmgInfo:GetDamageForce())
+		if (not isHead and not isNeck) and IsValid(gibEnt) and gibEnt.LookupBone and gibEnt.GetBoneMatrix then
+			local headIdx = gibEnt:LookupBone("ValveBiped.Bip01_Head1")
+			if headIdx then
+				local m = gibEnt:GetBoneMatrix(headIdx)
+				if m then
+					local headPos = m:GetTranslation()
+					if headPos and dmgPos and headPos:Distance(dmgPos) <= 18 then
+						isHead = true
+						boneId = headIdx
+						boneName = "ValveBiped.Bip01_Head1"
 					end
 				end
+			end
+			if (not isHead and not isNeck) then
+				local neckIdx = gibEnt:LookupBone("ValveBiped.Bip01_Neck1") or gibEnt:LookupBone("ValveBiped.Bip01_Neck")
+				if neckIdx then
+					local m2 = gibEnt:GetBoneMatrix(neckIdx)
+					if m2 then
+						local neckPos = m2:GetTranslation()
+						if neckPos and dmgPos and neckPos:Distance(dmgPos) <= 14 then
+							isNeck = true
+							boneId = neckIdx
+							boneName = "ValveBiped.Bip01_Neck1"
+						end
+					end
+				end
+			end
+		end
 
-				if victim.organism then
-					victim.organism.headamputated = true
-					net.Start("organism_send")
-					local tbl = {}
-					tbl.headamputated = true
-					tbl.owner = victim
-					net.WriteTable(tbl)
-					net.WriteBool(true)
-					net.WriteBool(false)
-					net.WriteBool(false)
-					net.WriteBool(true)
-					net.Broadcast()
+		if (isHead or isNeck) and dmgInfo:IsDamageType(DMG_BULLET + DMG_BUCKSHOT) and IsValid(victim) and victim:IsPlayer() and victim.organism then
+			victim.organism.no_wound_hold_until = CurTime() + 3
+			victim.organism.headshot_recent = CurTime() + 0.6
+		end
+
+		if (isHead or isNeck) then
+			local chance = 0
+			if math.random(100) <= chance then
+			local drop = ents.Create("prop_physics")
+			if IsValid(drop) then
+				local mdl = file.Exists("models/phobias/general/teeth.mdl","GAME") and "models/phobias/general/teeth.mdl" or "models/gibs/rgib_m2.mdl"
+				drop:SetModel(mdl)
+				drop:SetPos(dmgPos + VectorRand():GetNormalized() * 2 + Vector(0,0,4))
+				drop:SetAngles(AngleRand())
+				drop:Spawn()
+				local phys = drop:GetPhysicsObject()
+				if IsValid(phys) then
+					local dir = (dmgInfo:GetDamageForce():IsZero() and VectorRand() or dmgInfo:GetDamageForce()):GetNormalized()
+					phys:SetVelocity(dir * 150 + Vector(0,0,60))
+					phys:AddAngleVelocity(VectorRand() * 120)
+				end
+				timer.Simple(8, function() if IsValid(drop) then drop:Remove() end end)
+			end
+		end
+		end
+
+		if isHead or isNeck then
+			dmgInfo:ScaleDamage(1.45)
+
+			if isHands or isLegKick then
+				victim._hg_headstomp_reset = victim._hg_headstomp_reset or 0
+				if victim._hg_headstomp_reset < CurTime() then
+					victim._hg_headstomp_need = 6
+					victim._hg_headstomp_hits = 0
 				end
 
-				victim:Kill()
+				victim._hg_headstomp_reset = CurTime() + 10
+				victim._hg_headstomp_hits = (victim._hg_headstomp_hits or 0) + 1
+
+				if (victim._hg_headstomp_hits or 0) >= (victim._hg_headstomp_need or 7) then
+					print("[HG] Head/neck stomp threshold reached, amputating head for", victim, "hits=", victim._hg_headstomp_hits, "need=", victim._hg_headstomp_need, "bone=", boneName or "nil")
+					if isfunction(Gib_Input) then
+						local gibEnt = ent
+						if not ent:IsRagdoll() and IsValid(victim) and IsValid(victim.FakeRagdoll) then
+							gibEnt = victim.FakeRagdoll
+						end
+						local headBone = gibEnt.LookupBone and gibEnt:LookupBone("ValveBiped.Bip01_Head1") or nil
+						local popBone = (isNeck and headBone) or boneId or headBone
+						if popBone and IsValid(gibEnt) then
+							print("[HG] Calling Gib_Input on", gibEnt, "bone", popBone)
+							Gib_Input(gibEnt, popBone, dmgInfo:GetDamageForce())
+						end
+					end
+
+					if victim.organism then
+						victim.organism.headamputated = true
+						net.Start("organism_send")
+						local tbl = {}
+						tbl.headamputated = true
+						tbl.owner = victim
+						net.WriteTable(tbl)
+						net.WriteBool(true)
+						net.WriteBool(false)
+						net.WriteBool(false)
+						net.WriteBool(true)
+						net.Broadcast()
+					end
+
+					if victim:Alive() then
+						victim:Kill()
+					end
+				end
 			end
 		end
 	end
@@ -558,6 +635,33 @@ hook.Add("EntityTakeDamage", "homigrad-damage", function(ent, dmgInfo)
 			local boneId = physBone and ent.TranslatePhysBoneToBone and ent:TranslatePhysBoneToBone(physBone) or nil
 			local boneName = boneId and ent.GetBoneName and ent:GetBoneName(boneId) or nil
 			local hitgroup = boneName and hg and hg.bonetohitgroup and hg.bonetohitgroup[boneName] or nil
+			-- decerebrate handled in death ragdoll logic
+			if hitgroup == HITGROUP_HEAD and dmgInfo:IsDamageType(DMG_CLUB) then
+				local chance = 0
+				if math.random(100) <= chance then
+				local pos = dmgInfo:GetDamagePosition()
+				local drop = ents.Create("prop_physics")
+				if IsValid(drop) then
+					local mdl = file.Exists("models/phobias/general/teeth.mdl","GAME") and "models/phobias/general/teeth.mdl" or "models/gibs/rgib_m2.mdl"
+					drop:SetModel(mdl)
+					drop:SetPos(pos + VectorRand():GetNormalized() * 2 + Vector(0,0,4))
+					drop:SetAngles(AngleRand())
+					drop:Spawn()
+					local phys = drop:GetPhysicsObject()
+					if IsValid(phys) then
+						local dir = (dmgInfo:GetDamageForce():IsZero() and VectorRand() or dmgInfo:GetDamageForce()):GetNormalized()
+						phys:SetVelocity(dir * 150 + Vector(0,0,60))
+						phys:AddAngleVelocity(VectorRand() * 120)
+					end
+					timer.Simple(8, function() if IsValid(drop) then drop:Remove() end end)
+				end
+				end
+			end
+			if hitgroup == HITGROUP_HEAD and dmgInfo:IsDamageType(DMG_BULLET + DMG_BUCKSHOT) and IsValid(victim) and victim:IsPlayer() and victim.organism then
+				victim.organism.no_wound_hold_until = CurTime() + 3
+				victim.organism.headshot_recent = CurTime() + 0.6
+			end
+			-- removed eye stab/knock out (standing)
 
 			local weak = false
 			if fromBehind and (hitgroup == HITGROUP_HEAD or hitgroup == HITGROUP_CHEST or hitgroup == HITGROUP_STOMACH) then
@@ -913,8 +1017,17 @@ hook.Add("EntityTakeDamage", "homigrad-damage", function(ent, dmgInfo)
 	
 	local hitbody = #inputHole > 0 or not dmgInfo:IsDamageType(DMG_BULLET+DMG_BUCKSHOT)
 	
-	--if hitbody then
 	if not org.superfighter then
+		-- boost bleeding for head/neck bullets and cuts
+		local headOrNeck = (hitgroup == HITGROUP_HEAD) or (hitgroup == HITGROUP_NECK)
+		if headOrNeck then
+			if dmgInfo:IsDamageType(DMG_SLASH) then
+				dmgBlood = dmgBlood * 2.5
+			end
+			if dmgInfo:IsDamageType(DMG_BULLET + DMG_BUCKSHOT) then
+				dmgBlood = dmgBlood * 2.0
+			end
+		end
 		dmgBlood = dmgBlood * 1.5
 		local bleed_add = dmgBlood * bleedMul// / (RagdollDamageBoneMul[hitgroup] or 1)
 		--org.bleed = org.bleed + bleed_add
@@ -942,7 +1055,7 @@ hook.Add("EntityTakeDamage", "homigrad-damage", function(ent, dmgInfo)
 		org.shock_turn = 10 * (!org.otrub and 1 or 0.1)
 	
 		if org.shock > org.shock_turn * 1.5 * analgesiaMul * painkillerMul then
-			timer.Simple(0, function() hg.Fake(org.owner) end)
+			timer.Simple(0, function() if org and IsValid(org.owner) then hg.Fake(org.owner) end end)
 		end
 
 		if bullet and hg.ammotypeshuy[bullet.AmmoType] and hg.ammotypeshuy[bullet.AmmoType].BulletSettings.tranquilizer then

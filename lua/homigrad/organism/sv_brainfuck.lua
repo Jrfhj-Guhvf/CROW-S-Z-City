@@ -65,7 +65,10 @@ hg.getRandomSpasm = getRandomSpasm
 
 local function applySpasm(rag, stype)
 	if not IsValid(rag) then return end
-	local dur = stype == "extend" and extendDur or stype == "rigor" and rigorDur or flexionDur
+	local dur = stype == "extend" and extendDur
+		or stype == "rigor" and rigorDur
+		or stype == "flexion" and flexionDur
+		or extendDur
 	dur = math_rand(dur[1], dur[2])
 	
 	rag.spasm, rag.spasmType, rag.spasmDur, rag.spasmForce = true, stype, dur, FORCE
@@ -94,6 +97,8 @@ local function processExtend(rag, fade)
 		phys:ApplyForceCenter((dir * force * fade * pulse) + VectorRand(-VIBRATION, VIBRATION) * fade)
 	end
 end
+
+-- decorticate processor removed in revert
 
 local function processRigor(rag, fade)
 	if not rag.rigorActive then return end

@@ -1,4 +1,4 @@
-if SERVER then AddCSLuaFile() end
+﻿if SERVER then AddCSLuaFile() end
 SWEP.Base = "weapon_melee"
 SWEP.PrintName = "Tomahawk"
 SWEP.Instructions = "A single-handed striking tool designed to be used as a melee weapon by military personnel or as a hunting tool. Can break down doors.\n\nLMB to attack.\nRMB to block.\nRMB + LMB to throw."
@@ -46,7 +46,6 @@ SWEP.basebone = 94
 
 SWEP.weaponPos = Vector(0,0,-2)
 SWEP.weaponAng = Angle(0,-90,90)
-SWEP.HitPauseAllowSharp = true
 
 SWEP.AnimList = {
     ["idle"] = "Idle",

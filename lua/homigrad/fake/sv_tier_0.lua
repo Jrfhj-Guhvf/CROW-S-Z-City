@@ -228,7 +228,7 @@ function hg.Ragdoll_Create(ply)
 		end*/
 
 		local bonename = ragdoll:GetBoneName(bone)
-		local hitgroup = hg.bonetohitgroup[bonename]--( ent:IsPlayer() and tr.HitGroup or hg.bonetohitgroup[bonename])
+		local hitgroup = (hg and hg.bonetohitgroup and hg.bonetohitgroup[bonename]) or HITGROUP_GENERIC
 		
 		if hg.amputeetable[bonename] and ply.organism[hg.amputeetable[bonename].."amputated"] then
 			--phys:SetContents(CONTENTS_EMPTY)
@@ -1213,9 +1213,7 @@ hook.Add("Ragdoll Collide", "FallSounds", function(rag, data)
 	if not data.HitEntity:IsWorld() then return end
 	if data.OurOldVelocity:LengthSqr() < 165000 or (rag.NextSND or 0) > data.DeltaTime then return end
 	rag:EmitSound("player/falling_foley/fall_foley"..mRandom(13)..".wav", 60, mRandom(95, 115), 1, CHAN_AUTO)
-	if mRandom(3) == 2 then
-		rag:EmitSound("physics/flesh/flesh_impact_hard"..mRandom(6)..".wav", 55, mRandom(85, 105), 1, CHAN_AUTO)
-	end
+	hg.EmitRagdollImpact(rag, 55, mRandom(85, 105))
 
 	--[[local ply = rag:GetNWEntity("ply")
 	if IsValid(ply) and ply:Alive() and not ply.organism.otrub then

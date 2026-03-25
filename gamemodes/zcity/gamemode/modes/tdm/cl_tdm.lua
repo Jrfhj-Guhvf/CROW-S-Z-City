@@ -327,13 +327,15 @@ local rtabFunc = function(self)
 
 end
 
-local function OpenBuyMenu()
+local function OpenBuyMenu(buyUntil)
 	if TDM_OpenedBuyMenu then
 		TDM_OpenedBuyMenu:Remove()
 		TDM_OpenedBuyMenu = nil
 	end
 	local StartTime = zb.ROUND_START or CurTime()
-	if not LocalPlayer():Alive() or StartTime + 40 < CurTime() then return end
+	local mode = CurrentRound and CurrentRound() or nil
+	local BuyUntil = buyUntil or (mode and mode.BuyUntil) or (StartTime + (mode and mode.BuyTime or 40))
+	if not LocalPlayer():Alive() or BuyUntil < CurTime() then return end
 	TDM_OpenedBuyMenu = vgui.Create("ZFrame")
 	local Frame = TDM_OpenedBuyMenu
 	Frame:SetSize(1920*0.35,ScrH()*0.85)
@@ -484,8 +486,10 @@ local function OpenBuyMenu()
 	end
 
 	local StartTime = zb.ROUND_START or CurTime()
+	local mode = CurrentRound and CurrentRound() or nil
+	local BuyUntil = buyUntil or (mode and mode.BuyUntil) or (StartTime + (mode and mode.BuyTime or 40))
 	local lbl = vgui.Create("DLabel", Frame)
-	lbl:SetText("Time Left: "..string.FormattedTime(StartTime + 40 - CurTime(), "%02i:%02i:%02i"))
+	lbl:SetText("Time Left: "..string.FormattedTime(BuyUntil - CurTime(), "%02i:%02i:%02i"))
 	lbl:DockMargin(10,0,10,10)
 	lbl:Dock(BOTTOM)
 	lbl:SetTextColor(Color(255,255,255))
@@ -493,8 +497,8 @@ local function OpenBuyMenu()
 	lbl:SetSize(0,ScrH()*0.015)
 
 	function lbl:Think()
-		if not LocalPlayer():Alive() or StartTime + 40 < CurTime() then TDM_OpenedBuyMenu:Remove() end
-		self:SetText("Time Left: "..string.FormattedTime(StartTime + 40 - CurTime(), "%02i:%02i:%02i"))
+		if not LocalPlayer():Alive() or BuyUntil < CurTime() then TDM_OpenedBuyMenu:Remove() end
+		self:SetText("Time Left: "..string.FormattedTime(BuyUntil - CurTime(), "%02i:%02i:%02i"))
 	end
 
 	local lbl = vgui.Create("DLabel", Frame)
@@ -511,5 +515,5 @@ local function OpenBuyMenu()
 
 end
 
-net.Receive("tdm_open_buymenu",function() OpenBuyMenu() end)
+net.Receive("tdm_open_buymenu",function(len) OpenBuyMenu(len >= 32 and net.ReadFloat() or nil) end)
 TDM_OpenedBuyMenu = TDM_OpenedBuyMenu or nil

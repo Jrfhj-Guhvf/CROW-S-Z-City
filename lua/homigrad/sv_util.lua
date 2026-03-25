@@ -1245,6 +1245,11 @@ local TrackedModelsa = {
 	["models/weapons/w_knife_t.mdl"] = "weapon_pocketknife",
 	["models/weapons/w_knife_ct.mdl"] = "weapon_pocketknife",
 	["models/props_canal/mattpipe.mdl"] = "weapon_leadpipe",
+	["models/octoteam/weapons/screwdriver.mdl"] = "weapon_screwdriver",
+	["models/customhq/tobaccofarm/blunt.mdl"] = "weapon_blunt",
+	["models/boxopencigshib.mdl"] = "weapon_cigpack",
+	["models/phycignew.mdl"] = "weapon_cigarette_new",
+	["models/jellik/cigar.mdl"] = "weapon_cigar",
 }
 
 local TrackedModels = {}
@@ -1378,6 +1383,57 @@ hook.Add("PlayerDeath","I_Feel_Death",function(ply)
 	end
 end)
 
+hook.Add("PlayerSpawn", "ULXSupporterPerks", function(ply)
+	if not IsValid(ply) or not ply:Alive() then return end
+	local grp = string.lower(ply:GetUserGroup() or "")
+	timer.Simple(0.2, function()
+		if not IsValid(ply) then return end
+		local function give(cls)
+			if not ply:HasWeapon(cls) then ply:Give(cls) end
+		end
+		if grp == "supporter+" or grp == "supporterplus" or grp == "supporter_plus" then
+			give("weapon_blunt")
+			give("weapon_cigpack")
+			give("weapon_cigar")
+		elseif grp == "supporter" then
+			give("weapon_blunt")
+		end
+	end)
+end)
+-- Ragdoll impact sounds
+hg.RAGDOLL_SOUNDS = {
+	"physics/body/body_medium_impact_hard1.wav",
+	"physics/body/body_medium_impact_hard2.wav",
+	"physics/body/body_medium_impact_hard3.wav",
+	"physics/body/body_medium_impact_hard4.wav",
+	"physics/body/body_medium_impact_hard5.wav",
+	"physics/body/body_medium_impact_hard6.wav",
+	"physics/body/body_medium_impact_soft1.wav",
+	"physics/body/body_medium_impact_soft2.wav",
+	"physics/body/body_medium_impact_soft3.wav",
+	"physics/body/body_medium_impact_soft4.wav",
+	"physics/body/body_medium_impact_soft5.wav",
+	"physics/body/body_medium_impact_soft6.wav",
+	"physics/body/body_medium_impact_soft7.wav",
+	"physics/body/body_medium_scrape_rough_loop1.wav",
+	"physics/body/body_medium_scrape_rough_loop2.wav",
+	"physics/flesh/flesh_impact_hard1.wav",
+	"physics/flesh/flesh_impact_hard2.wav"
+}
+
+function hg.EmitRagdollImpact(ent, vol, pitch)
+	if not IsValid(ent) then return end
+	local snd = hg.RAGDOLL_SOUNDS[math.random(#hg.RAGDOLL_SOUNDS)]
+	ent:EmitSound(snd, vol or 60, pitch or math.random(90, 110), 1, CHAN_AUTO)
+end
+
+hook.Add("PostEntityTakeDamage", "HG_RagdollFallImpactSound", function(ent, dmginfo)
+	if not IsValid(ent) or not ent:IsPlayer() then return end
+	if bit.band(dmginfo:GetDamageType(), DMG_FALL) == 0 then return end
+	local target = IsValid(ent.FakeRagdoll) and ent.FakeRagdoll or ent
+	local vol = math.Clamp(50 + dmginfo:GetDamage() * 1.2, 55, 95)
+	hg.EmitRagdollImpact(target, vol, math.random(90, 110))
+end)
 hook.Add("PostEntityTakeDamage", "GlassShards", function(ent, dmginfo)
 	if IsValid(ent) and math.random(4) == 2 then
 		if ent:GetClass() == "func_breakable_surf" or (ent:GetClass() == "func_breakable" and ent:GetMaterialType() == MAT_GLASS) then

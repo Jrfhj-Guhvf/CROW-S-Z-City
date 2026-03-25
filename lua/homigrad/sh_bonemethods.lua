@@ -399,19 +399,36 @@ end)
 
 hook.Add("Bones", "homigrad-walk-torso", function(ply, dtime)
 	if not IsValid(ply) or not ply:IsPlayer() or not ply:Alive() then return end
-	if ply.organism and (ply.organism.llegamputated or ply.organism.rlegamputated) then
-		local torso = Angle(10, -55, 0)
-		local head = Angle(-10, 0, 0)
-		local l_upperarm = Angle(20, 0, 70)
-		local r_upperarm = Angle(0, 55, 0)
+	if ply:GetNWFloat("hg_dance_until", 0) > CurTime() then
+		local t = CurTime()
+		local speed = 5.5
+		local armSpeed = 8.5
+		local hipSide = math.sin(t * speed) * 26
+		local hipTwist = math.cos(t * speed) * 18
+		local bounce = math.abs(math.sin(t * speed * 0.5)) * 6
+		local armSide = -math.sin(t * armSpeed) * 55
+		local armForward = math.cos(t * armSpeed) * 35
+		local foreTwist = math.sin(t * armSpeed + math.pi / 2) * 25
+		local knee = math.sin(t * speed) * 12
 
-		hg.bone.Set(ply, "spine", vector_origin, torso, "walk", 0.08, dtime)
-		hg.bone.Set(ply, "l_upperarm", vector_origin, l_upperarm, "walk", 0.08, dtime)
-		hg.bone.Set(ply, "r_upperarm", vector_origin, r_upperarm, "walk", 0.08, dtime)
-		hg.bone.Set(ply, "spine1", vector_origin, torso, "walk", 0.08, dtime)
-		hg.bone.Set(ply, "spine2", vector_origin, torso, "walk", 0.08, dtime)
-		hg.bone.Set(ply, "pelvis", vector_origin, Angle(10, 0, 0), "walk", 0.08, dtime)
-		hg.bone.Set(ply, "head", vector_origin, head, "walk", 0.08, dtime)
+		hg.bone.Set(ply, "spine", vector_origin, Angle(bounce, hipTwist * 0.6, hipSide * 0.6), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "spine1", vector_origin, Angle(bounce, hipTwist * 0.6, hipSide * 0.6), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "spine2", vector_origin, Angle(bounce, hipTwist * 0.6, hipSide * 0.6), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "pelvis", vector_origin, Angle(-bounce, -hipTwist, hipSide), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "head", vector_origin, Angle(bounce * 0.4, hipTwist * 0.4, -hipSide * 0.2), "dance", 0.08, dtime)
+
+		hg.bone.Set(ply, "l_upperarm", vector_origin, Angle(armForward * 1.6, -hipTwist * 0.7, armSide * 1.8), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "r_upperarm", vector_origin, Angle(armForward * 1.6, hipTwist * 0.7, armSide * 1.8), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "l_forearm", vector_origin, Angle(armForward * 1.0, foreTwist * 1.9, armSide * 1.1), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "r_forearm", vector_origin, Angle(armForward * 1.0, -foreTwist * 1.9, armSide * 1.1), "dance", 0.08, dtime)
+
+		hg.bone.Set(ply, "ValveBiped.Bip01_L_Thigh", vector_origin, Angle(knee, -hipTwist * 0.2, -hipSide * 0.3), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_R_Thigh", vector_origin, Angle(-knee, hipTwist * 0.2, hipSide * 0.3), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_L_Calf", vector_origin, Angle(-knee * 0.6, 0, 0), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_R_Calf", vector_origin, Angle(knee * 0.6, 0, 0), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_L_Foot", vector_origin, Angle(knee * 0.2, 0, -hipSide * 0.2), "dance", 0.08, dtime)
+		hg.bone.Set(ply, "ValveBiped.Bip01_R_Foot", vector_origin, Angle(-knee * 0.2, 0, hipSide * 0.2), "dance", 0.08, dtime)
+		return
 	end
 	if aprilFoolsEnabled() then
 		if not ply:OnGround() then

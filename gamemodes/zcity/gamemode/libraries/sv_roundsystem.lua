@@ -288,6 +288,11 @@ function zb.GetAvailableModes()
 	zb.tdm_checkpoints()
 
 	local newtbl = {}
+	local blacklist = {
+		manhunt = true,
+		infection = true,
+		negotiations = true
+	}
 
 	for i, name in pairs(zb.GetModes()) do
 
@@ -298,7 +303,7 @@ function zb.GetAvailableModes()
 			canlaunch = ok and result and true or false
 		end
 
-		if canlaunch and
+		if (not blacklist[name]) and canlaunch and
 		(
 			( not tbl.ForBigMaps ) or
 			( zb.GetWorldSize() > ZBATTLE_BIGMAP )

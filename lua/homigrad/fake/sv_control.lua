@@ -621,7 +621,7 @@ hook.Add("Think", "Fake", function()
 
 							cons.choking = choking
 
-							ragdoll:EmitSound("physics/body/body_medium_impact_soft" .. math.random(1, 7) .. ".wav", 50, math.random(95, 105))
+							hg.EmitRagdollImpact(ragdoll, 50, math.random(95, 105))
 							
 							for i = 1, 4 do
 								if not ragdoll:LookupBone("ValveBiped.Bip01_L_Finger" .. tostring(i) .. "1") then continue end
@@ -697,7 +697,7 @@ hook.Add("Think", "Fake", function()
 
 							cons.choking = choking
 
-							ragdoll:EmitSound("physics/body/body_medium_impact_soft" .. math.random(1, 7) .. ".wav", 55, math.random(95, 105))
+							hg.EmitRagdollImpact(ragdoll, 55, math.random(95, 105))
 							
 							for i = 1, 4 do
 								if not ragdoll:LookupBone("ValveBiped.Bip01_R_Finger" .. tostring(i) .. "1") then continue end

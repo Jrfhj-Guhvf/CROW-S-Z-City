@@ -392,7 +392,7 @@ end)
 util.AddNetworkString("should_open_inv")
 local playerMeta = FindMetaTable("Player")
 function playerMeta:OpenInventory(ent)
-    hook.Run("ZB_InventoryOpened",self,ent)
+    if hook.Run("ZB_InventoryOpened", self, ent) == false then return end
     if not IsValid(ent) then return end
     if ent:IsPlayer() and not IsValid(ent.FakeRagdoll) then return end
     if ent:IsPlayer() then hg.RenewInv(ent) end
@@ -429,7 +429,7 @@ hook.Add("Player Think","loot-fellows",function(ply)
         local ent = trace.Entity
         ent = IsValid(hg.RagdollOwner(ent)) and hg.RagdollOwner(ent) or ent
     
-        hook.Run("ZB_InventoryChecked", ply, ent)
+        if hook.Run("ZB_InventoryChecked", ply, ent) == false then return end
         
         if not IsValid(ent) or not ent:GetNetVar("Inventory") then return end
         
