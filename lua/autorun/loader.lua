@@ -1,7 +1,7 @@
 hg = hg or {}
-hg.Version = "Release 1.06"
-hg.GitHub_ReposOwner = "uzelezz123"
-hg.GitHub_ReposName = "Z-City" -- please add your real git fork!
+hg.Version = "Release 1.10"
+hg.GitHub_ReposOwner = "mrboyplayz"
+hg.GitHub_ReposName = "CROW-S-Z-City" -- the most awesome fork on the planet😎
 
 if SERVER then
 	resource.AddWorkshop("3657285193") -- main addon
@@ -10,6 +10,7 @@ if SERVER then
 	resource.AddWorkshop("3544105055") -- second content addon
 	resource.AddWorkshop("3257937532") -- distac content
     resource.AddWorkshop("3601264102") -- crow's custom content
+	resource.AddWorkshop("3687375996") -- grandpa's content(comment out if content is in crow's custom content)
 end
 -- if hg.GitHub_ReposOwner and hg.GitHub_ReposOwner != "" then
 -- 	http.Fetch( "https://api.github.com/repos/" .. hg.GitHub_ReposOwner .. "/" .. hg.GitHub_ReposName .. "/commits?sha=" .. hg.GitHub_Branch .. "&per_page=1",
