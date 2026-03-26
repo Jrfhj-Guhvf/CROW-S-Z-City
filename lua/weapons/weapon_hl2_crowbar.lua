@@ -1,26 +1,26 @@
 if SERVER then AddCSLuaFile() end
 SWEP.Base = "weapon_melee"
 SWEP.PrintName = "HL2 Crowbar"
-SWEP.Instructions = "'I think you dropped this back in Black Mesa!'"
+SWEP.Instructions = '"I think you dropped this back in Black Mesa!"'
 SWEP.Category = "Weapons - Melee"
 SWEP.Spawnable = true
 SWEP.AdminOnly = false
 
 SWEP.WorldModel = "models/weapons/tfa_nmrih/w_me_crowbar.mdl"
-SWEP.WorldModelExchange = "models/weapons/c_crowbar2.mdl"
+SWEP.WorldModelExchange = "models/weapons/tfa_nmrih/w_me_crowbar.mdl"
 SWEP.ViewModel = ""
 
-SWEP.SuicidePos = Vector(0, -23, 6)
-SWEP.SuicideAng = Angle(0, 40, 80)
-SWEP.SuicideCutVec = Vector(0, -4, 0)
-SWEP.SuicideCutAng = Angle(0, 0, 0)
+SWEP.SuicidePos = Vector(9, 12, 18)
+SWEP.SuicideAng = Angle(60, -30, 0)
+SWEP.SuicideCutVec = Vector(1, 5, 1)
+SWEP.SuicideCutAng = Angle(10, 0, 0)
 SWEP.SuicideTime = 0.5
 SWEP.SuicideSound = "player/flesh/flesh_bullet_impact_03.wav"
-SWEP.CanSuicide = true
+SWEP.CanSuicide = false
 SWEP.SuicideNoLH = false
 SWEP.SuicideHoldType = "slam"
 
-SWEP.NoHolster = true
+SWEP.NoHolster = false
 
 SWEP.DamageType = DMG_SLASH
 SWEP.HoldAng = Angle()
@@ -50,29 +50,6 @@ SWEP.PenetrationSizeSecondary = 3.5
 
 SWEP.AttackLen1 = 65
 SWEP.AttackLen2 = 45
-
-
-
-SWEP.HideCrowbarBones = {
-	"Crowbar",
-	"weapon",
-	"Weapon",
-	"crowbar"
-}
-
-function SWEP:ModelAnim(model, pos, ang)
-	local newPos, newAng = self.BaseClass.ModelAnim(self, model, pos, ang)
-	if IsValid(model) then
-		for _, bone in ipairs(self.HideCrowbarBones) do
-			local boneId = model:LookupBone(bone)
-			if boneId then
-				model:ManipulateBoneScale(boneId, vector_origin)
-			end
-		end
-	end
-	return newPos, newAng
-end
-
 
 if CLIENT then
     SWEP.WepSelectIcon = Material("vgui/hud/tfa_nmrih_crowbar")
@@ -114,17 +91,16 @@ SWEP.AttackRads2 = 0
 SWEP.SwingAng = -15
 SWEP.SwingAng2 = 0
 
-SWEP.NoHolster = false
 SWEP.weaponInvCategory = 0
 SWEP.weight = nil
 SWEP.WorldModelReal = "models/weapons/c_crowbar2.mdl"
 SWEP.HoldType = "melee"
-SWEP.HoldPos = Vector(-4, 0, 0)
+SWEP.HoldPos = Vector(-7, 0, 0)
 SWEP.AttackTime = 0.2
 SWEP.WaitTime1 = 0.35
 SWEP.basebone = 39
-SWEP.weaponPos = Vector(13, -16.2, 9)
-SWEP.weaponAng = Angle(0, -260, 70)
+SWEP.weaponPos = Vector(1, 0, 0)
+SWEP.weaponAng = Angle(0, 90, 90)
 SWEP.StaminaPrimary = 5
 SWEP.StaminaSecondary = 10
 SWEP.setlh = false
