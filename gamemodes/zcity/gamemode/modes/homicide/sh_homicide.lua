@@ -69,7 +69,7 @@ You are equipped with various weapons, poisons and explosives, grenades and your
 			hg.AddAttachmentForce(ply, p22, "supressor4")
 			ply:Give("weapon_sogknife")	
 			ply:Give("weapon_hg_rgd_tpik")
-			-- ply:Give("weapon_walkie_talkie")
+			ply:Give("weapon_walkie_talkie")
 			ply:Give("weapon_adrenaline")
 			ply:Give("weapon_hg_smokenade_tpik")
 			ply:Give("weapon_traitor_ied")
@@ -119,7 +119,7 @@ For people who like to play chess.]],
 			ply:GiveAmmo(taser:GetMaxClip1() * 2, taser:GetPrimaryAmmoType(), true)
 			ply:Give("weapon_sogknife")
 			-- ply:Give("weapon_hg_rgd_tpik")
-			-- ply:Give("weapon_walkie_talkie")
+			ply:Give("weapon_walkie_talkie")
 			ply:Give("weapon_adrenaline")
 			ply:Give("weapon_hg_smokenade_tpik")
 			
@@ -173,7 +173,7 @@ For people who like to play checkers.]],
 		SpawnFunction = function(ply)
 			ply:Give("weapon_sogknife")	
 			ply:Give("weapon_adrenaline")
-			-- ply:Give("weapon_walkie_talkie")
+			ply:Give("weapon_walkie_talkie")
 			-- ply:Give("weapon_hg_smokenade_tpik")
 			-- ply:Give("weapon_hg_shuriken")
 			
@@ -211,6 +211,9 @@ Can detect presence and potency of chemical agents in the air.]],
 			MODE.CleanChemicalsOfPlayer(ply)
 		end,
 	},	
+	--==//
+	
+	--==\\
 	["traitor_shadow_soe"] = {
 		Name = "Shadow",
 		Description = [[A master of silent elimination.
@@ -231,11 +234,44 @@ For those who prefer to kill from the shadows.]],
 			ply:Give("weapon_sogknife")
 			ply:Give("weapon_traitor_poison1")
 			ply:Give("weapon_traitor_suit")
+			ply:Give("weapon_walkie_talkie")
 			ply:Give("weapon_adrenaline")
 			ply:Give("weapon_handcuffs")
 			ply:Give("weapon_hg_smokenade_tpik")
 			
 			ply.organism.stamina.max = 260
+			local inv = ply:GetNetVar("Inventory", {})
+			inv["Weapons"]["hg_flashlight"] = true
+			
+			ply:SetNetVar("Inventory", inv)
+		end,
+	},
+	--==//
+	
+	--==\\
+	["traitor_psycho"] = {
+		Name = "Psycho",
+		Description = [[A merciless killer.
+Equipped with a poisonous and holsterable Fireaxe.
+Has a disguise to prevent blood from getting on their clothes.
+Same stamina as the assassin. (+80 units)
+For those who want to play aggressively.]],
+		Objective = "You're a Psychopath. Use your Fireaxe and other tools to kill your Victims.",
+		SpawnFunction = function(ply)
+			-- Axe that will be poisonous and holsterable
+			local axe = ply:Give("weapon_fireaxe")
+			if IsValid(axe) then
+				axe.poisoned2 = true	--applys the poison
+				axe.NoHolster = false	--allows holstering
+			end
+			ply:Give("weapon_walkie_talkie")
+			ply:Give("weapon_traitor_poison4")
+			ply:Give("weapon_zc_fiberwire_standalone")
+			ply:Give("weapon_traitor_suit")
+			ply:Give("weapon_walkie_talkie")
+			ply:Give("weapon_adrenaline")
+			
+			ply.organism.stamina.max = 300
 			local inv = ply:GetNetVar("Inventory", {})
 			inv["Weapons"]["hg_flashlight"] = true
 			
@@ -259,7 +295,7 @@ For those who prefer to kill from the shadows.]],
 			 ply:Give("weapon_hg_pipebomb_tpik")
 			 ply:Give("weapon_hg_molotov_tpik")
 			 ply:Give("weapon_traitor_ied")
-			 --ply:Give("weapon_walkie_talkie")
+			 ply:Give("weapon_walkie_talkie")
 			
 			 ply.organism.stamina.max = 260
 			 local inv = ply:GetNetVar("Inventory", {})
@@ -348,7 +384,7 @@ MODE.RoleChooseRoundTypes = {
 			["traitor_infiltrator"] = true,
 			["traitor_chemist"] = true,
 			["traitor_assasin"] = true,
-			--["traitor_demoman"] = true, 	suicidal lunatic is now (NOT) available in standard! but it depends on which traitor class they chose.
+			["traitor_psycho"] = true, 	--patrick bateman
 		},
 		Professions = {
 			["doctor"] = {
@@ -375,7 +411,7 @@ MODE.RoleChooseRoundTypes = {
 			["traitor_infiltrator"] = true,
 			["traitor_chemist"] = true,
 			--["traitor_assasin"] = true,	there's no gunman so why have an assassin?
-			-- ["traitor_demoman"] = true,	having a shaid in gfz is op
+			--["traitor_psycho"] = true,	having a psycho in gfz is too op
 		},
 		Professions = {
 			["doctor"] = {
